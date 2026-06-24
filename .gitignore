@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+venv/
+backend/venv/
+.env
+.venv/
+celerybeat-schedule
+celerybeat.pid
+dist/
+build/
+*.pyc
+
+# Node
+node_modules/
+dist/
+.cache/
+.parcel-cache/
+
+# Database
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+test_fintellipro.db

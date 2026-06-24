@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: leadforge-backend
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: leadforge-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: leadforge-redis
+          type: redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "1440"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+    healthCheckPath: /health
+
+  - type: redis
+    name: leadforge-redis
+    region: oregon
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  - name: leadforge-db
+    region: oregon
+    plan: free
+    databaseName: fintellipro
+    user: fintellipro
+    postgresMajorVersion: 16
