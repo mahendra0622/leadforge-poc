@@ -88,7 +88,7 @@ function LoginPage() {
   }
 
   const loginWithGoogle = () => {
-    window.location.href = 'http://localhost:8000/api/auth/gmail/login'
+    window.location.href = `${import.meta.env.VITE_API_URL || ''}/api/auth/gmail/login`
   }
 
   return (
