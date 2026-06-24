@@ -45,46 +45,50 @@ SCOPES = [
     "openid",
 ]
 
-CLIENT_CONFIG = {
-    "web": {
-        "client_id":     os.getenv("GOOGLE_CLIENT_ID", ""),
-        "client_secret": os.getenv("GOOGLE_CLIENT_SECRET", ""),
-        "redirect_uris": [os.getenv("GOOGLE_REDIRECT_URI",
-                          "http://localhost:8000/api/auth/gmail/callback")],
-        "auth_uri":  "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
+_BASE_REDIRECT = os.getenv("GOOGLE_REDIRECT_URI",
+                           "http://localhost:8000/api/auth/gmail/callback")
+# Both callback paths must be registered in Google Cloud Console
+_CONNECT_REDIRECT = _BASE_REDIRECT.replace("/callback", "/connect-callback")
+
+def _make_client_config(redirect_uri: str) -> dict:
+    return {
+        "web": {
+            "client_id":     os.getenv("GOOGLE_CLIENT_ID", ""),
+            "client_secret": os.getenv("GOOGLE_CLIENT_SECRET", ""),
+            "redirect_uris": [redirect_uri],
+            "auth_uri":  "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+        }
     }
-}
+
+CLIENT_CONFIG = _make_client_config(_BASE_REDIRECT)
 
 
 # ══════════════════════════════════════════════════════════════
 # OAUTH FLOW
 # ══════════════════════════════════════════════════════════════
 
-def get_auth_url(state: str) -> str:
-    """
-    Step 1: Build the Google consent screen URL.
-    `state` should encode something you can verify on callback —
-    e.g. a signed random nonce stored in the user's session.
-    """
-    flow = Flow.from_client_config(CLIENT_CONFIG, scopes=SCOPES)
-    flow.redirect_uri = CLIENT_CONFIG["web"]["redirect_uris"][0]
+def get_auth_url(state: str, connect: bool = False) -> str:
+    """Build Google consent screen URL. connect=True uses the connect-callback URI."""
+    redirect_uri = _CONNECT_REDIRECT if connect else _BASE_REDIRECT
+    cfg = _make_client_config(redirect_uri)
+    flow = Flow.from_client_config(cfg, scopes=SCOPES)
+    flow.redirect_uri = redirect_uri
     auth_url, _ = flow.authorization_url(
-        access_type="offline",        # ← needed to get a refresh_token
+        access_type="offline",
         include_granted_scopes="true",
-        prompt="consent",             # forces refresh_token on every login
+        prompt="consent",
         state=state,
     )
     return auth_url
 
 
-def exchange_code_for_tokens(code: str) -> dict:
-    """
-    Step 2: Exchange the authorization code (from Google's redirect)
-    for access_token + refresh_token + the user's Gmail address.
-    """
-    flow = Flow.from_client_config(CLIENT_CONFIG, scopes=SCOPES)
-    flow.redirect_uri = CLIENT_CONFIG["web"]["redirect_uris"][0]
+def exchange_code_for_tokens(code: str, connect: bool = False) -> dict:
+    """Exchange authorization code for tokens. connect=True uses connect-callback URI."""
+    redirect_uri = _CONNECT_REDIRECT if connect else _BASE_REDIRECT
+    cfg = _make_client_config(redirect_uri)
+    flow = Flow.from_client_config(cfg, scopes=SCOPES)
+    flow.redirect_uri = redirect_uri
     flow.fetch_token(code=code)
     creds = flow.credentials
 

@@ -68,7 +68,8 @@ async def gmail_login_callback(code: str, state: str, db: Session = Depends(get_
 
     jwt_token = create_access_token({"sub": user.id})
 
-    frontend_url = "http://localhost:3000"
+    import os
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
     return RedirectResponse(f"{frontend_url}/auth/callback?token={jwt_token}")
 
 
@@ -81,7 +82,7 @@ async def gmail_connect_start(current_user: User = Depends(get_current_user)):
     """Returns the Google consent URL so the frontend can redirect the user."""
     state = secrets.token_urlsafe(24)
     _pending_states[state] = {"user_id": current_user.id, "created_at": datetime.utcnow()}
-    return {"auth_url": get_auth_url(state)}
+    return {"auth_url": get_auth_url(state, connect=True)}
 
 
 @router.get("/api/auth/gmail/connect-callback")
@@ -90,14 +91,16 @@ async def gmail_connect_callback(code: str, state: str, db: Session = Depends(ge
     if not pending or "user_id" not in pending:
         raise HTTPException(400, "Invalid OAuth state")
 
-    tokens = exchange_code_for_tokens(code)
+    tokens = exchange_code_for_tokens(code, connect=True)
     user = db.query(User).filter_by(id=pending["user_id"]).first()
     user.gmail_email         = tokens["email"]
     user.gmail_refresh_token = tokens["refresh_token"]
     user.gmail_connected_at  = datetime.utcnow()
     db.commit()
 
-    return RedirectResponse("http://localhost:3000/settings?gmail_connected=true")
+    import os
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    return RedirectResponse(f"{frontend_url}/settings?gmail_connected=true")
 
 
 # ══════════════════════════════════════════════════════════════
