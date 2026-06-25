@@ -826,25 +826,56 @@ function SignalCard({ s }: { s: any }) {
 }
 
 // ─── Outreach Panel (email history + send) ───────────────────────
+// Extract Gmail thread ID from a full URL or return the value as-is if already an ID
+function extractThreadId(input: string): string {
+  const trimmed = input.trim()
+  // Gmail URL pattern: .../mail/.../#.../THREAD_ID or .../mail/.../#.../THREAD_ID?...
+  const match = trimmed.match(/#(?:inbox|sent|all|search|label\/[^/]+)\/([A-Za-z0-9]+)/)
+  if (match) return match[1]
+  // Some Gmail URLs end with just the ID after the last /
+  const slashMatch = trimmed.match(/\/([A-Za-z0-9]{16,})(?:\?.*)?$/)
+  if (slashMatch) return slashMatch[1]
+  return trimmed
+}
+
 function OutreachPanel({ company }: { company: any }) {
+  const { user } = useAuthStore()
   const [showManualLink, setShowManualLink] = useState(false)
-  const [manualThreadId, setManualThreadId] = useState('')
+  const [manualInput, setManualInput] = useState('')
+  const [linkError, setLinkError] = useState('')
   const qc = useQueryClient()
+
+  const gmailConnected = !!user?.gmail_email
+  const [expandedMsgs, setExpandedMsgs] = useState<Set<string>>(new Set())
+  const toggleMsg = (id: string) => setExpandedMsgs(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    return next
+  })
 
   const { data: threadData, isLoading } = useQuery({
     queryKey: ['email-threads', company.id],
     queryFn: () => api.get(`/api/companies/${company.id}/email-threads`).then(r => r.data),
+    enabled: gmailConnected,
     retry: false,
   })
 
   const linkMutation = useMutation({
-    mutationFn: () => api.post(`/api/companies/${company.id}/email-threads/link`, {
-      thread_id: manualThreadId
-    }).then(r => r.data),
+    mutationFn: () => {
+      const threadId = extractThreadId(manualInput)
+      if (!threadId) throw new Error('Could not extract thread ID')
+      return api.post(`/api/companies/${company.id}/email-threads/link`, {
+        thread_id: threadId
+      }).then(r => r.data)
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['email-threads', company.id] })
       setShowManualLink(false)
-      setManualThreadId('')
+      setManualInput('')
+      setLinkError('')
+    },
+    onError: (err: any) => {
+      setLinkError(err?.response?.data?.detail || err?.message || 'Failed to link thread')
     }
   })
 
@@ -853,49 +884,75 @@ function OutreachPanel({ company }: { company: any }) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email History</h3>
-          <button onClick={() => setShowManualLink(!showManualLink)} className="text-xs text-blue-600 hover:text-blue-700 font-medium">
-            {showManualLink ? 'Cancel' : '+ Manually link a thread'}
-          </button>
+          {gmailConnected && (
+            <button onClick={() => { setShowManualLink(!showManualLink); setLinkError('') }} className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+              {showManualLink ? 'Cancel' : '+ Manually link a thread'}
+            </button>
+          )}
         </div>
 
         {showManualLink && (
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3 flex gap-2">
-            <input
-              className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Paste Gmail thread ID (from the URL when viewing the email)..."
-              value={manualThreadId}
-              onChange={e => setManualThreadId(e.target.value)}
-            />
-            <button onClick={() => linkMutation.mutate()} disabled={!manualThreadId.trim()}
-              className="text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold px-3 py-2 rounded-lg">
-              Link
-            </button>
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-3 space-y-2">
+            <div className="flex gap-2">
+              <input
+                className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Paste Gmail URL or thread ID — e.g. https://mail.google.com/mail/.../#sent/THREAD_ID"
+                value={manualInput}
+                onChange={e => { setManualInput(e.target.value); setLinkError('') }}
+              />
+              <button onClick={() => linkMutation.mutate()} disabled={!manualInput.trim() || linkMutation.isPending}
+                className="text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold px-3 py-2 rounded-lg whitespace-nowrap">
+                {linkMutation.isPending ? 'Linking...' : 'Link'}
+              </button>
+            </div>
+            {manualInput && (
+              <p className="text-xs text-slate-400">
+                Thread ID: <span className="font-mono text-slate-600">{extractThreadId(manualInput) || '—'}</span>
+              </p>
+            )}
+            {linkError && <p className="text-xs text-red-500">{linkError}</p>}
           </div>
         )}
 
-        {!company.gmail_connected ? (
+        {!gmailConnected ? (
           <div className="text-center py-8 bg-amber-50 border border-amber-100 rounded-xl">
-            <p className="text-xs text-amber-700">Connect Gmail in Settings to see email history</p>
+            <p className="text-xs text-amber-700 mb-2">Gmail not connected</p>
+            <a href="/settings" className="text-xs text-blue-600 hover:underline font-medium">Go to Settings → Connect Gmail</a>
           </div>
         ) : isLoading ? (
           <div className="text-xs text-slate-400 py-4">Loading conversation history...</div>
         ) : threadData?.threads?.length > 0 ? (
-          <div className="space-y-3 max-h-80 overflow-y-auto">
+          <div className="space-y-3 max-h-[32rem] overflow-y-auto pr-0.5">
             {threadData.threads.map((thread: any) => (
               <div key={thread.thread_id} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-600">
-                  {thread.subject}
+                <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-700 truncate flex-1">
+                    {thread.subject || <span className="text-slate-400 italic font-normal">No subject</span>}
+                  </span>
+                  <span className="text-xs text-slate-400 flex-shrink-0">{thread.message_count} msg{thread.message_count !== 1 ? 's' : ''}</span>
                 </div>
-                <div className="divide-y divide-slate-50">
-                  {thread.messages.map((msg: any) => (
-                    <div key={msg.id} className="px-3.5 py-2.5">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold text-slate-700 truncate">{msg.from}</span>
-                        <span className="text-xs text-slate-400 flex-shrink-0 ml-2">{msg.date?.slice(0, 16)}</span>
+                <div className="divide-y divide-slate-100">
+                  {thread.messages.map((msg: any) => {
+                    const expanded = expandedMsgs.has(msg.id)
+                    const hasBody = !!(msg.body?.trim())
+                    return (
+                      <div key={msg.id} className="px-3.5 py-2.5">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-slate-700 truncate">{msg.from}</span>
+                          <span className="text-xs text-slate-400 flex-shrink-0 ml-2">{msg.date?.slice(0, 16)}</span>
+                        </div>
+                        <p className={`text-xs text-slate-500 whitespace-pre-wrap break-words ${expanded ? '' : 'line-clamp-2'}`}>
+                          {expanded ? (msg.body || msg.snippet) : msg.snippet}
+                        </p>
+                        <button
+                          onClick={() => toggleMsg(msg.id)}
+                          className="mt-1 text-xs text-blue-500 hover:text-blue-700 font-medium"
+                        >
+                          {expanded ? '↑ Collapse' : `··· ${hasBody ? 'Show full email' : 'More'}`}
+                        </button>
                       </div>
-                      <p className="text-xs text-slate-500 line-clamp-2">{msg.snippet}</p>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             ))}

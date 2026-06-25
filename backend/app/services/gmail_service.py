@@ -186,22 +186,26 @@ def _parse_thread(thread: dict) -> dict:
     """Convert raw Gmail API thread response into clean message list."""
     messages = []
     for msg in thread.get("messages", []):
-        headers = {h["name"]: h["value"] for h in msg["payload"]["headers"]}
+        # Case-insensitive header lookup
+        headers = {h["name"].lower(): h["value"] for h in msg["payload"]["headers"]}
         body = _extract_body(msg["payload"])
         messages.append({
             "id":      msg["id"],
-            "from":    headers.get("From", ""),
-            "to":      headers.get("To", ""),
-            "subject": headers.get("Subject", "(no subject)"),
-            "date":    headers.get("Date", ""),
+            "from":    headers.get("from", ""),
+            "to":      headers.get("to", ""),
+            "subject": headers.get("subject", ""),
+            "date":    headers.get("date", ""),
             "snippet": msg.get("snippet", ""),
             "body":    body,
         })
 
+    # Use the first non-empty subject found across all messages
+    subject = next((m["subject"] for m in messages if m["subject"]), "")
+
     last_date = messages[-1]["date"] if messages else ""
     return {
         "thread_id":         thread["id"],
-        "subject":           messages[0]["subject"] if messages else "",
+        "subject":           subject,
         "messages":          messages,
         "message_count":     len(messages),
         "last_message_date": last_date,
@@ -209,16 +213,27 @@ def _parse_thread(thread: dict) -> dict:
 
 
 def _extract_body(payload: dict) -> str:
-    """Pull plain-text body out of a Gmail message payload."""
-    if "parts" in payload:
-        for part in payload["parts"]:
-            if part["mimeType"] == "text/plain":
-                data = part["body"].get("data", "")
+    """Pull plain-text body out of a Gmail message payload (handles nested multipart)."""
+    mime = payload.get("mimeType", "")
+    parts = payload.get("parts", [])
+
+    if mime == "text/plain":
+        data = payload.get("body", {}).get("data", "")
+        if data:
+            return base64.urlsafe_b64decode(data).decode("utf-8", errors="ignore")
+
+    for part in parts:
+        if part.get("mimeType") == "text/plain":
+            data = part.get("body", {}).get("data", "")
+            if data:
                 return base64.urlsafe_b64decode(data).decode("utf-8", errors="ignore")
-    elif payload.get("body", {}).get("data"):
-        return base64.urlsafe_b64decode(
-            payload["body"]["data"]
-        ).decode("utf-8", errors="ignore")
+
+    # Recurse into nested multipart/* structures
+    for part in parts:
+        result = _extract_body(part)
+        if result:
+            return result
+
     return ""
 
 
