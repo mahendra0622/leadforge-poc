@@ -1492,15 +1492,15 @@ function Settings() {
   const [scraping, setScraping] = useState(false)
   const [scrapeError, setScrapeError] = useState('')
   const [form, setForm] = useState({
-    company_name:        user?.company_name || '',
-    tagline:             '',
+    company_name:        user?.company_name        || '',
+    tagline:             user?.tagline             || '',
     product_description: user?.product_description || '',
-    key_strengths:       '',
-    differentiators:     '',
-    products:            [] as string[],
-    case_studies:        [] as { customer: string; outcome: string }[],
-    integrations:        [] as string[],
-    tone: user?.tone || 'consultative',
+    key_strengths:       user?.key_strengths       || '',
+    differentiators:     user?.differentiators     || '',
+    products:            user?.products            || [] as string[],
+    case_studies:        user?.case_studies        || [] as { customer: string; outcome: string }[],
+    integrations:        user?.integrations        || [] as string[],
+    tone:                user?.tone                || 'consultative',
   })
   const [saved, setSaved] = useState(false)
 

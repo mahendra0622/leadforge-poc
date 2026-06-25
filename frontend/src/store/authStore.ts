@@ -7,9 +7,15 @@ interface User {
   name: string
   company_name?: string
   product_description?: string
+  key_strengths?: string
+  differentiators?: string
+  tagline?: string
   tone?: string
   gmail_email?: string
   auth_provider?: string
+  products?: string[]
+  case_studies?: { customer: string; outcome: string }[]
+  integrations?: string[]
 }
 
 interface AuthState {
