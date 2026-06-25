@@ -188,7 +188,7 @@ docker compose exec backend python seed.py
 
 | Field    | Value                       |
 |----------|-----------------------------|
-| Email    | demo@fintellipro.com        |
+| Email    | demo@leadforge.ai        |
 | Password | demo1234                    |
 
 ---
