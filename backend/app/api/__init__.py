@@ -95,6 +95,66 @@ def update_profile(data: UserProfile, db: Session = Depends(get_db), current_use
     return {"status": "updated"}
 
 
+@auth_router.post("/seed-alacriti-profile")
+def seed_alacriti_profile(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """One-time seed: populate current user's profile with Alacriti company data."""
+    current_user.company_name = "Alacriti"
+    current_user.tagline = "One Platform. Payments Modernization. Delivered."
+    current_user.product_description = (
+        "Alacriti is the engine behind modern money movement — helping financial institutions "
+        "and businesses modernize their payments infrastructure and deliver a unified money "
+        "movement experience to their consumers. It powers billions in payments every year for "
+        "forward-thinking financial institutions, delivering the flexibility, scale, and speed "
+        "today's users expect, with technology that transforms how money moves from real-time "
+        "rails to seamless integration with legacy systems."
+    )
+    current_user.key_strengths = (
+        "Flexibility of Solutions — consumer-centric, configurable solutions regardless of institution size. "
+        "Strength of Technology — a tech stack built for rapid, secure, cost-effective delivery of "
+        "traditional and faster payments rails. "
+        "Single Source of Truth — one unified solution breaking down siloed infrastructure with improved "
+        "visibility into rails performance, cash flow, and liquidity. "
+        "Depth of Integration — out-of-the-box capability to connect with core banking, digital banking, "
+        "fraud, and risk systems. "
+        "Unparalleled Speed to Market — average implementation of just 3–4 months."
+    )
+    current_user.differentiators = (
+        "ISO 20022-based, cloud-native core — Payments Hub securely orchestrates and processes all payment "
+        "types (TCH RTP, FedNow, Zelle, Visa Direct, ACH, Wires) from a single solution. "
+        "'Human-Driven Care, Tech-Powered Results' — customers describe Alacriti as a true partner: "
+        "'Your team is always responsive.' "
+        "Proven traction — Royal Credit Union processed $15.5MM in instant payments within 3 months of "
+        "launch; ABNB Federal Credit Union moved $5M across 2,300+ transactions in two months. "
+        "Strong integration ecosystem — AWS, Fiserv, Alkami, Backbase, Q2, Apiture, The Clearing House, "
+        "Socure, Glia, and the U.S. Faster Payments Council."
+    )
+    current_user.products = [
+        "Unified Money Movement (UMM) — payments/transfers for FIs",
+        "Loan Payments",
+        "P2P (Zelle)",
+        "EBPP — Electronic Bill Presentment and Payments for billers",
+        "Payouts — business-to-consumer payouts",
+        "Transfers A2A",
+        "RfP (Request for Payment)",
+        "Payments Hub — centralized infrastructure for instant payments, wires, ACH",
+        "RTP (TCH network)",
+        "FedNow",
+        "Wires (Fedwire)",
+        "Global Transfers / Cross-Border Payments",
+        "Visa Direct",
+        "ACH",
+        "Instant Payments (RTP + FedNow + Visa Direct)",
+        "Bank Account Validation & Verification",
+    ]
+    current_user.integrations = [
+        "AWS", "Fiserv", "Alkami", "Backbase", "Q2", "Apiture",
+        "The Clearing House", "Socure", "Glia", "U.S. Faster Payments Council",
+    ]
+    current_user.tone = "consultative"
+    db.commit()
+    return {"status": "seeded", "company": "Alacriti"}
+
+
 # ──────────────────────────────────────────
 # COMPANIES
 # ──────────────────────────────────────────
