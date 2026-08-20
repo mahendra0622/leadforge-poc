@@ -7,7 +7,7 @@ headers = []
 [functions."*"]
 
 [build]
-publish = "/Users/mahendra/Projects/Projects/AI-Poc/Leadforge/fintellipro-poc/dist"
+publish = "/Users/mahendra/Projects/Projects/AI-Poc/Leadforge/fintellipro-poc/frontend/dist"
 publishOrigin = "config"
 commandOrigin = "config"
 command = "npm run build"

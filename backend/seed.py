@@ -30,11 +30,19 @@ def seed():
     init_db()
     db = SessionLocal()
 
-    # Demo user
-    if not db.query(User).filter_by(email="demo@leadforge.ai").first():
+    # Demo user — email matches login page default
+    existing = db.query(User).filter_by(email="demo@fintellipro.com").first()
+    if not existing:
+        # Also check old email in case this is a re-seed
+        existing = db.query(User).filter_by(email="demo@leadforge.ai").first()
+        if existing:
+            existing.email = "demo@fintellipro.com"
+            db.commit()
+            print("  ✓ Demo user email updated to demo@fintellipro.com")
+    if not db.query(User).filter_by(email="demo@fintellipro.com").first():
         db.add(User(
             id=U_USER,
-            email="demo@leadforge.ai",
+            email="demo@fintellipro.com",
             hashed_password=hash_password("demo1234"),
             full_name="Alex Kumar",
             company_name="LeadForge",
@@ -44,7 +52,7 @@ def seed():
             tone="consultative",
         ))
         db.commit()
-        print("  ✓ Demo user created — demo@leadforge.ai / demo1234")
+        print("  ✓ Demo user created — demo@fintellipro.com / demo1234")
     else:
         print("  · Demo user already exists")
 
@@ -175,7 +183,7 @@ def seed():
     db.close()
     print("\n✅ Seed complete!")
     print("\nLogin credentials:")
-    print("  Email:    demo@leadforge.ai")
+    print("  Email:    demo@fintellipro.com")
     print("  Password: demo1234")
     print("\nOpen: http://localhost:3000")
 

@@ -10,9 +10,14 @@ from typing import Generator
 
 from app.core.config import settings
 
+# Render.com provides postgres:// but SQLAlchemy 2.x requires postgresql://
+_db_url = settings.DATABASE_URL
+if _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql://", 1)
+
 # Sync engine (for background tasks + Celery)
 engine = create_engine(
-    settings.DATABASE_URL,
+    _db_url,
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
