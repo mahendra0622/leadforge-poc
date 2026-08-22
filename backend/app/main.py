@@ -68,5 +68,28 @@ async def health_check():
 async def startup():
     logger.info("LeadForge starting — creating DB tables...")
     init_db()
+    _seed_demo_user()
     logger.info("Ready. NCUA API: /api/ncua/search  CUNA priorities: /api/ncua/cuna/priorities")
     logger.info("Swagger docs: http://localhost:8000/docs")
+
+
+def _seed_demo_user():
+    from app.db.database import SessionLocal
+    from app.models.user import User
+    from app.core.security import hash_password
+    db = SessionLocal()
+    try:
+        if not db.query(User).filter_by(email="demo@fintellipro.com").first():
+            db.add(User(
+                email="demo@fintellipro.com",
+                hashed_password=hash_password("demo1234"),
+                full_name="Alex Kumar",
+                company_name="LeadForge",
+                tone="consultative",
+            ))
+            db.commit()
+            logger.info("Demo user seeded: demo@fintellipro.com / demo1234")
+    except Exception as e:
+        logger.warning(f"Demo user seed skipped: {e}")
+    finally:
+        db.close()
