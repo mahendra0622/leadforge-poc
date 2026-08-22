@@ -15,7 +15,7 @@ from app.models import Company, Contact, Signal, User, AIMessage, Campaign
 from app.services.regulatory.cuna_ncua import CUNAIntelligenceClient, LEGACY_PROCESSORS
 from app.services.regulatory.ncua_real_data import REAL_NCUA_CUS
 
-TARGET = 50
+TARGET = 100
 
 G="\033[92m"; Y="\033[93m"; C="\033[96m"; W="\033[0m"; B="\033[1m"
 def ok(s):   print(f"  {G}✓{W} {s}")
