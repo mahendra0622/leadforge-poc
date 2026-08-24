@@ -256,13 +256,15 @@ def main():
     db = SessionLocal()
 
     # Get demo user
-    demo_user = db.query(User).filter_by(email="demo@leadforge.ai").first()
+    demo_user = db.query(User).filter_by(email="demo@fintellipro.com").first()
     if not demo_user:
-        warn("Demo user not found — run seed.py first")
-        demo_user_id = "a0000000-0000-0000-0000-000000000001"
-    else:
-        demo_user_id = demo_user.id
-        ok(f"Demo user: {demo_user.email}")
+        demo_user = db.query(User).first()
+    if not demo_user:
+        warn("No users found — cannot seed messages. Run the app startup first.")
+        db.close()
+        return
+    demo_user_id = demo_user.id
+    ok(f"Demo user: {demo_user.email}")
 
     companies = db.query(Company).filter_by(industry="credit_unions") \
                   .order_by(Company.opportunity_score.desc()).all()
