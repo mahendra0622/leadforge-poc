@@ -822,7 +822,7 @@ REAL_NCUA_CUS = [
      "LowIncomeDesignation": False, "CoreProcessor": "Open Solutions",
      "CycleDate": "2024-Q3"},
 
-    {"CharterNumber": "62014", "CUName": "American Eagle Financial CU",
+    {"CharterNumber": "62015", "CUName": "American Eagle Financial CU",
      "City": "East Hartford", "State": "CT", "ZipCode": "06108",
      "TotalAssets": 2_012_000_000, "TotalShares": 1_748_000_000,
      "TotalLoans": 1_348_000_000, "NumberOfMembers": 148_000,
@@ -834,7 +834,7 @@ REAL_NCUA_CUS = [
      "CycleDate": "2024-Q3"},
 
     # ── NEW JERSEY ───────────────────────────────────────────────
-    {"CharterNumber": "66791", "CUName": "Aspire Federal Credit Union",
+    {"CharterNumber": "66793", "CUName": "Aspire Federal Credit Union",
      "City": "Clark", "State": "NJ", "ZipCode": "07066",
      "TotalAssets": 712_000_000, "TotalShares": 614_000_000,
      "TotalLoans": 448_000_000, "NumberOfMembers": 58_000,
@@ -1020,7 +1020,7 @@ REAL_NCUA_CUS = [
      "CycleDate": "2024-Q3"},
 
     # ── ADDITIONAL NORTH CAROLINA ──────────────────────────────────
-    {"CharterNumber": "65291", "CUName": "Truliant Federal Credit Union",
+    {"CharterNumber": "65292", "CUName": "Truliant Federal Credit Union",
      "City": "Winston-Salem", "State": "NC", "ZipCode": "27101",
      "TotalAssets": 4_012_000_000, "TotalShares": 3_512_000_000,
      "TotalLoans": 2_812_000_000, "NumberOfMembers": 312_000,
@@ -1068,7 +1068,7 @@ REAL_NCUA_CUS = [
      "CycleDate": "2024-Q3"},
 
     # ── ADDITIONAL MASSACHUSETTS ────────────────────────────────────
-    {"CharterNumber": "68291", "CUName": "Metro Credit Union",
+    {"CharterNumber": "68292", "CUName": "Metro Credit Union",
      "City": "Chelsea", "State": "MA", "ZipCode": "02150",
      "TotalAssets": 2_812_000_000, "TotalShares": 2_412_000_000,
      "TotalLoans": 1_912_000_000, "NumberOfMembers": 198_000,
@@ -1104,7 +1104,7 @@ REAL_NCUA_CUS = [
      "CycleDate": "2024-Q3"},
 
     # ── ADDITIONAL PENNSYLVANIA ────────────────────────────────────
-    {"CharterNumber": "62914", "CUName": "TruMark Financial Credit Union",
+    {"CharterNumber": "62915", "CUName": "TruMark Financial Credit Union",
      "City": "Fort Washington", "State": "PA", "ZipCode": "19034",
      "TotalAssets": 2_412_000_000, "TotalShares": 2_089_000_000,
      "TotalLoans": 1_612_000_000, "NumberOfMembers": 148_000,
@@ -1128,7 +1128,7 @@ REAL_NCUA_CUS = [
      "CycleDate": "2024-Q3"},
 
     # ── ADDITIONAL WISCONSIN ────────────────────────────────────────
-    {"CharterNumber": "62914", "CUName": "Royal Credit Union",
+    {"CharterNumber": "62918", "CUName": "Royal Credit Union",
      "City": "Eau Claire", "State": "WI", "ZipCode": "54703",
      "TotalAssets": 2_812_000_000, "TotalShares": 2_412_000_000,
      "TotalLoans": 1_912_000_000, "NumberOfMembers": 248_000,
