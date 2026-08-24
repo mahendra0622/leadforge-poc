@@ -221,7 +221,7 @@ Only mark is_relevant=true if this article represents a genuine sales opportunit
 Severity 80+ = immediate outreach trigger. 60-79 = worth noting. Below 60 = skip."""
 
         resp = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-haiku-4-5-20251001",
             max_tokens=300,
             messages=[{"role": "user", "content": prompt}]
         )
