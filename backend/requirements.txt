@@ -27,7 +27,6 @@ google-auth-oauthlib==1.2.0
 google-api-python-client==2.126.0
 
 # Web scraping
-playwright==1.44.0
 beautifulsoup4==4.12.3
 lxml==5.2.2
 
