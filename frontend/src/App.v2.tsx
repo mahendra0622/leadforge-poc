@@ -712,24 +712,121 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
             </button>
           ))}
         </div>
-        <div className="p-7 flex-1">
-          {activeTab === 'overview' && detail && (
-            <div className="space-y-3">
-              {[
-                ['Total Assets', detail.revenue_est ? `$${(detail.revenue_est / 1_000_000).toFixed(0)}M` : '—'],
-                ['Members', detail.regulatory_data?.total_members ? detail.regulatory_data.total_members.toLocaleString() : '—'],
-                ['Net Worth Ratio', detail.regulatory_data?.net_worth_ratio ? `${detail.regulatory_data.net_worth_ratio}%` : '—'],
-                ['Loan-to-Share', detail.regulatory_data?.loan_to_share_ratio ? `${detail.regulatory_data.loan_to_share_ratio}%` : '—'],
-                ['Digital Maturity', `${detail.digital_maturity || '—'} / 5`],
-                ['Core Processor', (detail.tech_stack || []).filter(Boolean).join(', ') || '—'],
-              ].map(([k, v]) => (
-                <div key={k as string} className="flex items-center justify-between py-2.5 border-b border-slate-100">
-                  <span className="text-sm text-slate-500">{k}</span>
-                  <span className="text-sm text-slate-800 font-semibold">{v}</span>
+        <div className="p-7 flex-1 overflow-y-auto">
+          {activeTab === 'overview' && detail && (() => {
+            const rd = detail.regulatory_data || {};
+            const roa = rd.roa;
+            const roe = rd.roe;
+            const fh  = rd.financial_health_score;
+            const mu  = rd.modernization_urgency;
+            const gm  = rd.growth_momentum_score;
+
+            const roaColor  = roa == null ? 'text-slate-800' : roa >= 0.8 ? 'text-emerald-600' : roa < 0.3 ? 'text-red-500' : 'text-amber-500';
+            const roeColor  = roe == null ? 'text-slate-800' : roe >= 10  ? 'text-emerald-600' : roe < 4   ? 'text-red-500' : 'text-amber-500';
+            const fhColor   = fh  == null ? 'text-slate-800' : fh  >= 70  ? 'text-emerald-600' : fh  < 45  ? 'text-red-500' : 'text-amber-500';
+            const muColor   = mu  == null ? 'text-slate-800' : mu  >= 70  ? 'text-red-500'     : mu  < 40  ? 'text-emerald-600' : 'text-amber-500';
+
+            const ScoreBar = ({ value, color }: { value: number; color: string }) => (
+              <div className="flex items-center gap-2">
+                <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${color.replace('text-','bg-')}`} style={{ width: `${value}%` }} />
                 </div>
-              ))}
-            </div>
-          )}
+                <span className={`text-sm font-semibold ${color}`}>{value}</span>
+              </div>
+            );
+
+            return (
+              <div className="space-y-5">
+                {/* Key financials */}
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Financials</p>
+                  <div className="space-y-0">
+                    {[
+                      ['Total Assets',    detail.revenue_est ? `$${(detail.revenue_est / 1_000_000).toFixed(0)}M` : '—', 'text-slate-800'],
+                      ['Members',         rd.total_members ? rd.total_members.toLocaleString() : '—', 'text-slate-800'],
+                      ['Net Worth Ratio', rd.net_worth_ratio != null ? `${rd.net_worth_ratio}%` : '—', rd.net_worth_ratio >= 10 ? 'text-emerald-600' : rd.net_worth_ratio < 6 ? 'text-red-500' : 'text-slate-800'],
+                      ['Loan-to-Share',   rd.loan_to_share_ratio != null ? `${rd.loan_to_share_ratio}%` : '—', rd.loan_to_share_ratio >= 85 ? 'text-emerald-600' : 'text-slate-800'],
+                    ].map(([k, v, color]) => (
+                      <div key={k as string} className="flex items-center justify-between py-2 border-b border-slate-100">
+                        <span className="text-sm text-slate-500">{k}</span>
+                        <span className={`text-sm font-semibold ${color}`}>{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Computed ratios */}
+                {(roa != null || roe != null) && (
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Performance Ratios</p>
+                    <div className="space-y-0">
+                      {roa != null && (
+                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                          <span className="text-sm text-slate-500">Return on Assets (ROA)</span>
+                          <span className={`text-sm font-semibold ${roaColor}`}>{roa}%</span>
+                        </div>
+                      )}
+                      {roe != null && (
+                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                          <span className="text-sm text-slate-500">Return on Equity (ROE)</span>
+                          <span className={`text-sm font-semibold ${roeColor}`}>{roe}%</span>
+                        </div>
+                      )}
+                      {rd.assets_per_member != null && (
+                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                          <span className="text-sm text-slate-500">Assets per Member</span>
+                          <span className="text-sm font-semibold text-slate-800">${(rd.assets_per_member / 1000).toFixed(0)}K</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Derived scores */}
+                {(fh != null || mu != null || gm != null) && (
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Intelligence Scores</p>
+                    <div className="space-y-2.5">
+                      {fh != null && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-500">Financial Health</span>
+                          <ScoreBar value={fh} color={fhColor} />
+                        </div>
+                      )}
+                      {gm != null && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-500">Growth Momentum</span>
+                          <ScoreBar value={gm} color="text-blue-600" />
+                        </div>
+                      )}
+                      {mu != null && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-500">Modernization Urgency</span>
+                          <ScoreBar value={mu} color={muColor} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tech */}
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Technology</p>
+                  <div className="space-y-0">
+                    {[
+                      ['Core Processor',  (detail.tech_stack || []).filter(Boolean).join(', ') || '—', 'text-slate-800'],
+                      ['Digital Maturity', `${detail.digital_maturity || '—'} / 5`, 'text-slate-800'],
+                    ].map(([k, v, color]) => (
+                      <div key={k as string} className="flex items-center justify-between py-2 border-b border-slate-100">
+                        <span className="text-sm text-slate-500">{k}</span>
+                        <span className={`text-sm font-semibold ${color}`}>{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
           {activeTab === 'signals' && detail && (
             <div className="space-y-2">
               {detail.signals?.map((s: any) => (
