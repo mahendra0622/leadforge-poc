@@ -7,7 +7,7 @@ headers = []
 [functions."*"]
 
 [build]
-publish = "/Users/mahendra/Projects/Projects/AI-Poc/Leadforge/fintellipro-poc/frontend/dist"
+publish = "/Users/mahendra/Projects/Projects/AI-Poc/Leadforge/fintellipro-poc/dist"
 publishOrigin = "config"
 commandOrigin = "config"
 command = "npm run build"
@@ -27,6 +27,18 @@ NODE_VERSION = "20"
 [build.processing.js]
 
 [build.services]
+
+[[redirects]]
+from = "/api/*"
+to = "https://leadforge-backend-2f6w.onrender.com/api/:splat"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
 
 [[redirects]]
 from = "/*"
