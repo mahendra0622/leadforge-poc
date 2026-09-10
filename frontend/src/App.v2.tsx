@@ -809,6 +809,31 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
                   </div>
                 )}
 
+                {/* Payment Rails */}
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Payment Rails</p>
+                  <div className="space-y-0">
+                    <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">RTP Network</span>
+                      {rd.is_rtp_participant == null
+                        ? <span className="text-sm text-slate-400">Unknown</span>
+                        : rd.is_rtp_participant
+                          ? <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Participant</span>
+                          : <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Not on RTP</span>
+                      }
+                    </div>
+                    <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                      <span className="text-sm text-slate-500">FedNow</span>
+                      {rd.is_fednow_participant == null
+                        ? <span className="text-sm text-slate-400">Unknown</span>
+                        : rd.is_fednow_participant
+                          ? <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Participant</span>
+                          : <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Not on FedNow</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
                 {/* Tech */}
                 <div>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Technology</p>
