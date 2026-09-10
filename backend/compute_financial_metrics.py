@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.db.database import SessionLocal, init_db
 from app.models import Company, Signal
+from sqlalchemy.orm.attributes import flag_modified
 from app.services.regulatory.ncua_real_data import REAL_NCUA_CUS
 
 G="\033[92m"; Y="\033[93m"; C="\033[96m"; R="\033[91m"; W="\033[0m"; B="\033[1m"
@@ -245,12 +246,12 @@ def main():
         gm_score = growth_momentum_score(metrics, assets, members)
         mu_score = modernization_urgency_score(metrics, co.digital_maturity or 3, assets)
 
-        # Patch regulatory_data with all new fields
-        rd.update(metrics)
-        rd["financial_health_score"]    = fh_score
-        rd["growth_momentum_score"]     = gm_score
-        rd["modernization_urgency"]     = mu_score
-        co.regulatory_data = rd
+        # Patch regulatory_data with all new fields — assign a new dict so SQLAlchemy detects the change
+        co.regulatory_data = {**rd, **metrics,
+                              "financial_health_score": fh_score,
+                              "growth_momentum_score":  gm_score,
+                              "modernization_urgency":  mu_score}
+        flag_modified(co, "regulatory_data")
 
         # Remove any existing financial signals to avoid duplicates
         db.query(Signal).filter(
