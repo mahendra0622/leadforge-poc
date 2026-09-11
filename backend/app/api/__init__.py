@@ -182,8 +182,20 @@ def list_companies(
     if search:
         q = q.filter(Company.name.ilike(f"%{search}%"))
 
+    signal_subq = (
+        db.query(func.count(Signal.id))
+        .filter(Signal.company_id == Company.id, Signal.is_active == True)
+        .correlate(Company)
+        .scalar_subquery()
+    )
+
     total = q.count()
-    companies = q.order_by(Company.opportunity_score.desc()).offset((page - 1) * per_page).limit(per_page).all()
+    companies = (
+        q.order_by(Company.opportunity_score.desc(), signal_subq.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
 
     result = []
     for co in companies:
