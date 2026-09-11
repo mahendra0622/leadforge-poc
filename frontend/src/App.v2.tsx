@@ -168,7 +168,8 @@ function GoogleAuthCallback() {
 // ─── Sidebar ────────────────────────────────────────────────────
 const NAV = [
   { to: '/dashboard', icon: '▦', label: 'Dashboard' },
-  { to: '/leads',     icon: '◉', label: 'Leads' },
+  { to: '/leads',     icon: '◉', label: 'Credit Unions' },
+  { to: '/banks',     icon: '⬡', label: 'Banks' },
   { to: '/my-lists',  icon: '☰', label: 'My Lists' },
   { to: '/ai-engine', icon: '✦', label: 'AI Engine' },
   { to: '/campaigns', icon: '✉', label: 'Campaigns' },
@@ -189,7 +190,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <div>
               <div className="text-sm font-bold text-slate-900">LeadForge</div>
-              <div className="text-xs text-slate-400">v2.0 · NCUA Intelligence</div>
+              <div className="text-xs text-slate-400">v2.0 · CU + Bank Intel</div>
             </div>
           </div>
         </div>
@@ -677,6 +678,110 @@ function Leads() {
   )
 }
 
+// ─── Community Banks ────────────────────────────────────────────
+function Banks() {
+  const [search, setSearch]       = useState('')
+  const [statusFilter, setStatus] = useState('')
+  const [selected, setSelected]   = useState<any>(null)
+  const qc = useQueryClient()
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['banks', search, statusFilter],
+    queryFn: () => api.get('/api/companies/', {
+      params: { search, industry: 'community_banks', status: statusFilter }
+    }).then(r => r.data),
+  })
+
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status }: any) => api.patch(`/api/companies/${id}`, { outreach_status: status }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['banks'] }),
+  })
+
+  return (
+    <div>
+      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200 px-8 py-4 flex items-center gap-3 flex-wrap">
+        <div className="flex-1">
+          <h1 className="text-lg font-bold text-slate-900">Community Banks</h1>
+          <p className="text-xs text-slate-400 mt-0.5">FDIC-powered · 50 banks · Sorted by opportunity score</p>
+        </div>
+        <input
+          className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-44 shadow-sm"
+          placeholder="Search banks..."
+          value={search} onChange={e => setSearch(e.target.value)}
+        />
+        <select
+          className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+          value={statusFilter} onChange={e => setStatus(e.target.value)}
+        >
+          <option value="">All Statuses</option>
+          {Object.entries(STATUSES).map(([k, v]) => (
+            <option key={k} value={k}>{(v as any).label}</option>
+          ))}
+        </select>
+      </div>
+      <div className="p-8">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20"><Spinner /></div>
+        ) : (
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  {['Bank', 'Score', 'Assets', 'NIM', 'ROA', 'Status', 'Signals', ''].map(h => (
+                    <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data?.data?.map((co: any) => {
+                  const rd = co.regulatory_data || {}
+                  const assetB = co.revenue_est ? (co.revenue_est / 1e9).toFixed(1) : '—'
+                  const nim = rd.nim != null ? `${rd.nim}%` : '—'
+                  const roa = rd.roa != null ? `${rd.roa}%` : '—'
+                  const nimColor = !rd.nim ? '' : rd.nim >= 4 ? 'text-emerald-600' : rd.nim < 2.8 ? 'text-red-500' : 'text-amber-500'
+                  return (
+                    <tr key={co.id} className="border-b border-slate-50 hover:bg-blue-50/20 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <div className="font-semibold text-slate-800">{co.name}</div>
+                        <div className="text-xs text-slate-400">{co.hq_city}, {co.hq_state}</div>
+                      </td>
+                      <td className="px-5 py-3.5"><Badge score={co.opportunity_score} /></td>
+                      <td className="px-5 py-3.5 text-xs text-slate-600 font-medium">${assetB}B</td>
+                      <td className={`px-5 py-3.5 text-xs font-semibold ${nimColor}`}>{nim}</td>
+                      <td className="px-5 py-3.5 text-xs text-slate-600">{roa}</td>
+                      <td className="px-5 py-3.5">
+                        <StatusSelect value={co.outreach_status || 'new'}
+                          onChange={s => updateStatus.mutate({ id: co.id, status: s })} />
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="text-xs font-semibold text-slate-500">{co.signal_count}</span>
+                        <span className="text-xs text-slate-300 ml-1">signals</span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <button onClick={() => setSelected(co)}
+                          className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1.5 rounded-lg transition-colors shadow-sm">
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+            {(!data?.data?.length) && !isLoading && (
+              <div className="text-center py-16 text-slate-400">
+                <p className="font-medium">No community banks found.</p>
+                <p className="text-xs mt-1">Run <code className="bg-slate-100 px-1 rounded">seed_community_banks.py</code> to load data.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      {selected && <LeadDrawer company={selected} onClose={() => setSelected(null)} />}
+    </div>
+  )
+}
+
 // ─── Lead Drawer ────────────────────────────────────────────────
 function LeadDrawer({ company, onClose }: { company: any; onClose: () => void }) {
   const { data: detail } = useQuery({
@@ -715,6 +820,7 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
         <div className="p-7 flex-1 overflow-y-auto">
           {activeTab === 'overview' && detail && (() => {
             const rd = detail.regulatory_data || {};
+            const isBank = detail.industry === 'community_banks';
             const roa = rd.roa;
             const roe = rd.roe;
             const fh  = rd.financial_health_score;
@@ -725,6 +831,8 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
             const roeColor  = roe == null ? 'text-slate-800' : roe >= 10  ? 'text-emerald-600' : roe < 4   ? 'text-red-500' : 'text-amber-500';
             const fhColor   = fh  == null ? 'text-slate-800' : fh  >= 70  ? 'text-emerald-600' : fh  < 45  ? 'text-red-500' : 'text-amber-500';
             const muColor   = mu  == null ? 'text-slate-800' : mu  >= 70  ? 'text-red-500'     : mu  < 40  ? 'text-emerald-600' : 'text-amber-500';
+            const nimColor  = !rd.nim ? 'text-slate-800' : rd.nim >= 4.0 ? 'text-emerald-600' : rd.nim < 2.8 ? 'text-red-500' : 'text-amber-500';
+            const t1Color   = !rd.tier1_capital_ratio ? 'text-slate-800' : rd.tier1_capital_ratio >= 12 ? 'text-emerald-600' : rd.tier1_capital_ratio < 8 ? 'text-red-500' : 'text-amber-500';
 
             const ScoreBar = ({ value, color }: { value: number; color: string }) => (
               <div className="flex items-center gap-2">
@@ -735,54 +843,71 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
               </div>
             );
 
+            const RailBadge = ({ on, label }: { on: boolean | null, label: string }) =>
+              on == null
+                ? <span className="text-sm text-slate-400">—</span>
+                : on
+                  ? <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Participant</span>
+                  : <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Not on {label}</span>;
+
+            const Row = ({ label, value, color = 'text-slate-800' }: { label: string, value: string, color?: string }) => (
+              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                <span className="text-sm text-slate-500">{label}</span>
+                <span className={`text-sm font-semibold ${color}`}>{value}</span>
+              </div>
+            );
+
             return (
               <div className="space-y-5">
-                {/* Key financials */}
+                {/* Financials — bank vs CU */}
                 <div>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Financials</p>
                   <div className="space-y-0">
-                    {[
-                      ['Total Assets',    detail.revenue_est ? `$${(detail.revenue_est / 1_000_000).toFixed(0)}M` : '—', 'text-slate-800'],
-                      ['Members',         rd.total_members ? rd.total_members.toLocaleString() : '—', 'text-slate-800'],
-                      ['Net Worth Ratio', rd.net_worth_ratio != null ? `${rd.net_worth_ratio}%` : '—', rd.net_worth_ratio >= 10 ? 'text-emerald-600' : rd.net_worth_ratio < 6 ? 'text-red-500' : 'text-slate-800'],
-                      ['Loan-to-Share',   rd.loan_to_share_ratio != null ? `${rd.loan_to_share_ratio}%` : '—', rd.loan_to_share_ratio >= 85 ? 'text-emerald-600' : 'text-slate-800'],
-                    ].map(([k, v, color]) => (
-                      <div key={k as string} className="flex items-center justify-between py-2 border-b border-slate-100">
-                        <span className="text-sm text-slate-500">{k}</span>
-                        <span className={`text-sm font-semibold ${color}`}>{v}</span>
-                      </div>
-                    ))}
+                    <Row label="Total Assets" value={detail.revenue_est ? `$${(detail.revenue_est / 1_000_000).toFixed(0)}M` : '—'} />
+                    {isBank ? (
+                      <>
+                        <Row label="Total Deposits" value={rd.total_deposits_k ? `$${(rd.total_deposits_k / 1000).toFixed(0)}M` : '—'} />
+                        <Row label="Net Loans" value={rd.net_loans_k ? `$${(rd.net_loans_k / 1000).toFixed(0)}M` : '—'} />
+                        <Row label="Equity" value={rd.equity_k ? `$${(rd.equity_k / 1000).toFixed(0)}M` : '—'} />
+                        <Row label="Loan-to-Deposit"
+                          value={rd.loan_to_deposit != null ? `${rd.loan_to_deposit}%` : '—'}
+                          color={rd.loan_to_deposit >= 90 ? 'text-emerald-600' : 'text-slate-800'} />
+                      </>
+                    ) : (
+                      <>
+                        <Row label="Members" value={rd.total_members ? rd.total_members.toLocaleString() : '—'} />
+                        <Row label="Net Worth Ratio"
+                          value={rd.net_worth_ratio != null ? `${rd.net_worth_ratio}%` : '—'}
+                          color={rd.net_worth_ratio >= 10 ? 'text-emerald-600' : rd.net_worth_ratio < 6 ? 'text-red-500' : 'text-slate-800'} />
+                        <Row label="Loan-to-Share"
+                          value={rd.loan_to_share_ratio != null ? `${rd.loan_to_share_ratio}%` : '—'}
+                          color={rd.loan_to_share_ratio >= 85 ? 'text-emerald-600' : 'text-slate-800'} />
+                      </>
+                    )}
                   </div>
                 </div>
 
-                {/* Computed ratios */}
-                {(roa != null || roe != null) && (
+                {/* Performance Ratios */}
+                {(roa != null || roe != null || rd.nim != null || rd.tier1_capital_ratio != null) && (
                   <div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Performance Ratios</p>
                     <div className="space-y-0">
-                      {roa != null && (
-                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                          <span className="text-sm text-slate-500">Return on Assets (ROA)</span>
-                          <span className={`text-sm font-semibold ${roaColor}`}>{roa}%</span>
-                        </div>
+                      {roa != null && <Row label="Return on Assets (ROA)" value={`${roa}%`} color={roaColor} />}
+                      {roe != null && <Row label="Return on Equity (ROE)" value={`${roe}%`} color={roeColor} />}
+                      {isBank && rd.nim != null && (
+                        <Row label="Net Interest Margin (NIM)" value={`${rd.nim}%`} color={nimColor} />
                       )}
-                      {roe != null && (
-                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                          <span className="text-sm text-slate-500">Return on Equity (ROE)</span>
-                          <span className={`text-sm font-semibold ${roeColor}`}>{roe}%</span>
-                        </div>
+                      {isBank && rd.tier1_capital_ratio != null && (
+                        <Row label="Tier 1 Capital Ratio" value={`${rd.tier1_capital_ratio}%`} color={t1Color} />
                       )}
-                      {rd.assets_per_member != null && (
-                        <div className="flex items-center justify-between py-2 border-b border-slate-100">
-                          <span className="text-sm text-slate-500">Assets per Member</span>
-                          <span className="text-sm font-semibold text-slate-800">${(rd.assets_per_member / 1000).toFixed(0)}K</span>
-                        </div>
+                      {!isBank && rd.assets_per_member != null && (
+                        <Row label="Assets per Member" value={`$${(rd.assets_per_member / 1000).toFixed(0)}K`} />
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* Derived scores */}
+                {/* Intelligence Scores */}
                 {(fh != null || mu != null || gm != null) && (
                   <div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Intelligence Scores</p>
@@ -815,21 +940,11 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
                   <div className="space-y-0">
                     <div className="flex items-center justify-between py-2 border-b border-slate-100">
                       <span className="text-sm text-slate-500">RTP Network</span>
-                      {rd.is_rtp_participant == null
-                        ? <span className="text-sm text-slate-400">Unknown</span>
-                        : rd.is_rtp_participant
-                          ? <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Participant</span>
-                          : <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Not on RTP</span>
-                      }
+                      <RailBadge on={rd.is_rtp_participant ?? null} label="RTP" />
                     </div>
                     <div className="flex items-center justify-between py-2 border-b border-slate-100">
                       <span className="text-sm text-slate-500">FedNow</span>
-                      {rd.is_fednow_participant === undefined || rd.is_fednow_participant === null
-                        ? <span className="text-sm text-slate-400">—</span>
-                        : rd.is_fednow_participant
-                          ? <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Participant</span>
-                          : <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">Not on FedNow</span>
-                      }
+                      <RailBadge on={rd.is_fednow_participant ?? null} label="FedNow" />
                     </div>
                   </div>
                 </div>
@@ -1816,6 +1931,7 @@ export default function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<RequireAuth><Layout><Dashboard /></Layout></RequireAuth>} />
         <Route path="/leads"     element={<RequireAuth><Layout><Leads /></Layout></RequireAuth>} />
+        <Route path="/banks"     element={<RequireAuth><Layout><Banks /></Layout></RequireAuth>} />
         <Route path="/my-lists"  element={<RequireAuth><Layout><MyLists /></Layout></RequireAuth>} />
         <Route path="/ai-engine" element={<RequireAuth><Layout><AIEngine /></Layout></RequireAuth>} />
         <Route path="/campaigns" element={<RequireAuth><Layout><Campaigns /></Layout></RequireAuth>} />
