@@ -250,7 +250,6 @@ def make_contact(company_id: str, bank_name: str, title: str, is_dm: bool) -> Co
         email_confidence= random.randint(72, 95),
         linkedin_url    = f"https://www.linkedin.com/in/{li_slug}",
         is_decision_maker = is_dm,
-        source          = "apollo",
     )
 
 
