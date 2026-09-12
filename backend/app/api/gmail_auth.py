@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
 import secrets
+import uuid
 
 from app.db.database import get_db
 from app.models import User, Company, Contact, EmailThreadLink
@@ -187,23 +188,37 @@ async def send_outreach_email(
         raise HTTPException(400, "Contact has no email on file")
 
     from app.models import AIMessage
+
+    # Create the AIMessage record first so we have its ID for tracking
+    tracking_id = str(uuid.uuid4())
+    ai_msg = AIMessage(
+        id=tracking_id,
+        company_id=req.company_id, contact_id=req.contact_id,
+        owner_id=current_user.id,
+        message_type="email", subject_line=req.subject, body=req.body,
+        sent=False, open_count=0, click_count=0,
+    )
+    db.add(ai_msg)
+    db.flush()  # write to DB so tracking endpoints can find it immediately
+
     result = send_email(
         current_user.gmail_refresh_token,
         to=contact.email,
         subject=req.subject,
         body=req.body,
         thread_id=req.thread_id,
+        tracking_message_id=tracking_id,
     )
 
-    db.add(AIMessage(
-        company_id=req.company_id, contact_id=req.contact_id,
-        message_type="email", subject_line=req.subject, body=req.body,
-        sent_at=datetime.utcnow(), gmail_message_id=result["message_id"],
-    ))
+    # Update the record with the Gmail message ID now that it's sent
+    ai_msg.sent            = True
+    ai_msg.sent_at         = datetime.utcnow()
+    ai_msg.gmail_message_id = result["message_id"]
+
     db.add(EmailThreadLink(
         company_id=req.company_id, user_id=current_user.id,
         gmail_thread_id=result["thread_id"],
     ))
     db.commit()
 
-    return result
+    return {**result, "tracking_id": tracking_id}

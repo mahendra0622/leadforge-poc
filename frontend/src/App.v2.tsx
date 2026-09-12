@@ -971,10 +971,27 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
                   <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
                     {c.name.split(' ').map((n: string) => n[0]).join('')}
                   </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-slate-800 text-sm">{c.name}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-slate-800 text-sm">{c.name}</span>
+                      {c.is_decision_maker && (
+                        <span className="text-[10px] font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">DM</span>
+                      )}
+                      {c.open_count > 0 && (
+                        <span title={`${c.open_count} email open${c.open_count !== 1 ? 's' : ''}`}
+                          className="text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                          ◉ {c.open_count}
+                        </span>
+                      )}
+                      {c.click_count > 0 && (
+                        <span title={`${c.click_count} link click${c.click_count !== 1 ? 's' : ''}`}
+                          className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                          ↗ {c.click_count}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-slate-500">{c.title}</div>
-                    <div className="text-xs text-blue-600 font-medium mt-0.5">{c.email}</div>
+                    <div className="text-xs text-blue-600 font-medium mt-0.5 truncate">{c.email}</div>
                   </div>
                 </div>
               ))}

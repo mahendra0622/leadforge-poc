@@ -27,10 +27,13 @@ SCOPES requested:
 
 import os
 import re
+import html as html_lib
 import base64
 import json
+import urllib.parse
 from datetime import datetime
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from typing import Optional
 
 from google_auth_oauthlib.flow import Flow
@@ -241,21 +244,60 @@ def _extract_body(payload: dict) -> str:
 # SEND — directly from the logged-in user's Gmail
 # ══════════════════════════════════════════════════════════════
 
+def _build_tracked_html(body: str, message_id: str, backend_url: str) -> str:
+    """Convert plain-text body to HTML with click-tracked links and open pixel."""
+    backend_url = backend_url.rstrip("/")
+    escaped = html_lib.escape(body)
+
+    # Wrap bare URLs with tracked redirect links
+    url_re = re.compile(r'(https?://[^\s<>"]+)')
+    def _wrap(m):
+        orig = m.group(1)
+        encoded = urllib.parse.quote(orig, safe="")
+        track = f"{backend_url}/api/track/click/{message_id}?url={encoded}"
+        return f'<a href="{track}">{orig}</a>'
+    escaped = url_re.sub(_wrap, escaped)
+
+    escaped = escaped.replace("\n", "<br>\n")
+    pixel = f"{backend_url}/api/track/open/{message_id}"
+    return (
+        f"<html><body>"
+        f'<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">'
+        f"{escaped}"
+        f"</div>"
+        f'<img src="{pixel}" width="1" height="1" alt="" '
+        f'style="display:none;width:1px;height:1px;">'
+        f"</body></html>"
+    )
+
+
 def send_email(refresh_token: str, to: str, subject: str, body: str,
-               thread_id: Optional[str] = None) -> dict:
+               thread_id: Optional[str] = None,
+               tracking_message_id: Optional[str] = None) -> dict:
     """
     Sends an email AS the logged-in user — appears in their own Sent
-    folder, replies land in their own inbox (per approved spec: "use
-    the logged in user", not a shared system sender).
+    folder, replies land in their own inbox.
 
-    If thread_id is provided, the email is sent as a reply within that
-    existing Gmail thread (proper threading, not a new conversation).
+    If tracking_message_id is provided, injects an open-pixel and wraps
+    links for click tracking before sending.
+    If thread_id is provided, sends as a reply in that Gmail thread.
     """
     service = get_gmail_service(refresh_token)
 
-    message = MIMEText(body)
-    message["to"] = to
-    message["subject"] = subject
+    if tracking_message_id:
+        backend_url = os.getenv(
+            "BACKEND_URL", "https://leadforge-backend-2f6w.onrender.com"
+        )
+        html_body = _build_tracked_html(body, tracking_message_id, backend_url)
+        message = MIMEMultipart("alternative")
+        message["to"]      = to
+        message["subject"] = subject
+        message.attach(MIMEText(body,      "plain", "utf-8"))
+        message.attach(MIMEText(html_body, "html",  "utf-8"))
+    else:
+        message = MIMEText(body)
+        message["to"]      = to
+        message["subject"] = subject
 
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
     body_payload = {"raw": raw}

@@ -16,6 +16,7 @@ from app.api import (
 )
 from app.api.company_scrape import router as company_scrape_router
 from app.api.gmail_auth import router as gmail_router
+from app.api.tracking import router as tracking_router
 
 logger.remove()
 logger.add(sys.stdout,
@@ -57,6 +58,7 @@ app.include_router(ncua_router,       prefix="/api/ncua",      tags=["NCUA + CUN
 # NEW: Company URL scraper (Settings auto-fill) + Gmail OAuth + outreach send
 app.include_router(company_scrape_router, tags=["Settings"])
 app.include_router(gmail_router,          tags=["Gmail"])
+app.include_router(tracking_router,       tags=["Tracking"])
 
 
 @app.get("/health", tags=["System"])
@@ -68,9 +70,28 @@ async def health_check():
 async def startup():
     logger.info("LeadForge starting — creating DB tables...")
     init_db()
+    _migrate_tracking_columns()
     _seed_demo_user()
     logger.info("Ready. NCUA API: /api/ncua/search  CUNA priorities: /api/ncua/cuna/priorities")
     logger.info("Swagger docs: http://localhost:8000/docs")
+
+
+def _migrate_tracking_columns():
+    """Add open_count/click_count to ai_messages if they don't exist yet."""
+    from app.db.database import SessionLocal
+    from sqlalchemy import text
+    db = SessionLocal()
+    try:
+        for col, default in [("open_count", "0"), ("click_count", "0")]:
+            db.execute(text(
+                f"ALTER TABLE ai_messages ADD COLUMN IF NOT EXISTS "
+                f"{col} INTEGER NOT NULL DEFAULT {default}"
+            ))
+        db.commit()
+    except Exception as e:
+        logger.warning(f"Tracking column migration skipped: {e}")
+    finally:
+        db.close()
 
 
 def _seed_demo_user():

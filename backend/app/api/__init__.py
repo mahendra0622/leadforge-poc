@@ -236,6 +236,19 @@ def get_company(company_id: str, db: Session = Depends(get_db), _: User = Depend
     signals = db.query(Signal).filter_by(company_id=co.id, is_active=True).all()
     contacts = db.query(Contact).filter_by(company_id=co.id).all()
 
+    # Aggregate open/click counts per contact across all sent messages
+    from app.models import AIMessage
+    from sqlalchemy import func as sqlfunc
+    _rows = (
+        db.query(AIMessage.contact_id,
+                 sqlfunc.coalesce(sqlfunc.sum(AIMessage.open_count), 0),
+                 sqlfunc.coalesce(sqlfunc.sum(AIMessage.click_count), 0))
+        .filter(AIMessage.company_id == co.id, AIMessage.sent == True)
+        .group_by(AIMessage.contact_id)
+        .all()
+    )
+    engagement = {r[0]: (int(r[1]), int(r[2])) for r in _rows}
+
     return {
         "id": co.id, "name": co.name, "website": co.website,
         "industry": co.industry, "hq_city": co.hq_city, "hq_state": co.hq_state,
@@ -244,7 +257,17 @@ def get_company(company_id: str, db: Session = Depends(get_db), _: User = Depend
         "digital_maturity": co.digital_maturity, "outreach_status": co.outreach_status,
         "regulatory_src": co.regulatory_src, "regulatory_data": co.regulatory_data,
         "signals": [{"id": s.id, "type": s.signal_type, "label": s.signal_label, "severity": s.severity, "source": s.source, "source_url": s.source_url, "source_file": s.source_file, "source_page": s.source_page, "source_hover": format_hover_text(s)} for s in signals],
-        "contacts": [{"id": c.id, "name": f"{c.first_name} {c.last_name}".strip(), "title": c.title, "email": c.email, "email_status": c.email_status, "is_decision_maker": c.is_decision_maker, "linkedin_url": c.linkedin_url} for c in contacts],
+        "contacts": [{
+            "id": c.id,
+            "name": f"{c.first_name} {c.last_name}".strip(),
+            "title": c.title,
+            "email": c.email,
+            "email_status": c.email_status,
+            "is_decision_maker": c.is_decision_maker,
+            "linkedin_url": c.linkedin_url,
+            "open_count":  engagement.get(c.id, (0, 0))[0],
+            "click_count": engagement.get(c.id, (0, 0))[1],
+        } for c in contacts],
     }
 
 
