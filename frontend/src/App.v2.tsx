@@ -1219,11 +1219,13 @@ function AIMessagePanel({ company, latestThreadId }: { company: any; latestThrea
   const [msgType, setMsgType] = useState('email')
   const [message, setMessage] = useState<any>(null)
   const [sent, setSent] = useState(false)
-  const firstContact = company.contacts?.[0]
+  const contacts = company.contacts || []
+  const [selectedContactId, setSelectedContactId] = useState<string>(contacts[0]?.id || '')
+  const selectedContact = contacts.find((c: any) => c.id === selectedContactId) || contacts[0]
 
   const generateMutation = useMutation({
     mutationFn: ({ tone }: { tone?: string } = {}) => api.post('/api/ai/generate-message', {
-      company_id: company.id, contact_id: firstContact?.id,
+      company_id: company.id, contact_id: selectedContact?.id,
       message_type: msgType, tone: tone || undefined,
     }).then(r => r.data),
     onSuccess: (data) => { setMessage(data); setSent(false) },
@@ -1232,7 +1234,7 @@ function AIMessagePanel({ company, latestThreadId }: { company: any; latestThrea
   const sendMutation = useMutation({
     mutationFn: () => api.post('/api/outreach/send-email', {
       company_id: company.id,
-      contact_id: firstContact?.id,
+      contact_id: selectedContact?.id,
       subject: message.subject_line,
       body: message.body,
       thread_id: latestThreadId || undefined,
@@ -1240,9 +1242,24 @@ function AIMessagePanel({ company, latestThreadId }: { company: any; latestThrea
     onSuccess: () => setSent(true),
   })
 
-  if (!firstContact) return <p className="text-slate-400 text-sm text-center py-10">No contacts found.</p>
+  if (!contacts.length) return <p className="text-slate-400 text-sm text-center py-10">No contacts found.</p>
   return (
     <div className="space-y-4">
+      {/* Contact selector */}
+      <div>
+        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">Send to</label>
+        <select
+          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+          value={selectedContactId}
+          onChange={e => { setSelectedContactId(e.target.value); setMessage(null); setSent(false) }}
+        >
+          {contacts.map((c: any) => (
+            <option key={c.id} value={c.id}>
+              {c.name} · {c.title} — {c.email}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="flex gap-2 flex-wrap">
         {['email', 'linkedin', 'call_script'].map(t => (
           <button key={t} onClick={() => { setMsgType(t); setMessage(null) }}
@@ -1294,6 +1311,7 @@ function AIMessagePanel({ company, latestThreadId }: { company: any; latestThrea
 // ─── AI Engine (Version 2 — RAG + Response Loop) ────────────────
 function AIEngine() {
   const [selectedId, setSelectedId] = useState('')
+  const [selectedContactId, setSelectedContactId] = useState('')
   const [msgType, setMsgType] = useState('email')
   const [message, setMessage] = useState<any>(null)
   // RAG: client response and follow-up
@@ -1311,14 +1329,20 @@ function AIEngine() {
     queryFn: () => selectedId ? api.get(`/api/companies/${selectedId}`).then(r => r.data) : null,
     enabled: !!selectedId,
   })
+  const engineContacts = (companyDetail as any)?.contacts || []
+  const engineContact = engineContacts.find((c: any) => c.id === selectedContactId) || engineContacts[0]
+
+  // Reset selected contact when company changes
+  useEffect(() => {
+    if (engineContacts.length) setSelectedContactId(engineContacts[0].id)
+  }, [selectedId])
 
   const generateMutation = useMutation({
     mutationFn: ({ tone }: { tone?: string } = {}) => {
-      const contact = companyDetail?.contacts?.[0]
-      if (!contact) throw new Error('No contact')
+      if (!engineContact) throw new Error('No contact')
       return api.post('/api/ai/generate-message', {
         company_id: selectedId,
-        contact_id: contact.id,
+        contact_id: engineContact.id,
         message_type: msgType,
         use_rag: true,
         tone: tone || undefined,
@@ -1367,13 +1391,24 @@ function AIEngine() {
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Select Lead</label>
               <select className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-                value={selectedId} onChange={e => { setSelectedId(e.target.value); setMessage(null); setFollowUp(null); setClientResponse('') }}>
-                <option value="">Choose a credit union...</option>
+                value={selectedId} onChange={e => { setSelectedId(e.target.value); setSelectedContactId(''); setMessage(null); setFollowUp(null); setClientResponse('') }}>
+                <option value="">Choose a company...</option>
                 {companies?.data?.map((co: any) => (
                   <option key={co.id} value={co.id}>{co.name} — Score: {co.opportunity_score}</option>
                 ))}
               </select>
             </div>
+            {engineContacts.length > 0 && (
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Send to Contact</label>
+                <select className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                  value={selectedContactId} onChange={e => { setSelectedContactId(e.target.value); setMessage(null) }}>
+                  {engineContacts.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name} · {c.title} — {c.email}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Message Type</label>
               <div className="flex gap-2">
@@ -1597,17 +1632,17 @@ Example:
                 <div className="text-xs text-purple-400 mt-2">Retrieved automatically at generation time</div>
               </div>
 
-              {companyDetail.contacts?.[0] && (
+              {engineContact && (
                 <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
                   <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Target Contact</div>
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
-                      {companyDetail.contacts[0].name.split(' ').map((n: string) => n[0]).join('')}
+                      {engineContact.name.split(' ').map((n: string) => n[0]).join('')}
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-slate-800">{companyDetail.contacts[0].name}</div>
-                      <div className="text-xs text-slate-500">{companyDetail.contacts[0].title}</div>
-                      <div className="text-xs text-blue-600 font-medium">{companyDetail.contacts[0].email}</div>
+                      <div className="text-sm font-semibold text-slate-800">{engineContact.name}</div>
+                      <div className="text-xs text-slate-500">{engineContact.title}</div>
+                      <div className="text-xs text-blue-600 font-medium">{engineContact.email}</div>
                     </div>
                   </div>
                 </div>
