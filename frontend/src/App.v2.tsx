@@ -576,14 +576,13 @@ function Dashboard() {
 // ─── Leads ──────────────────────────────────────────────────────
 function Leads() {
   const [search, setSearch] = useState('')
-  const [industry, setIndustry] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [selected, setSelected] = useState<any>(null)
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
-    queryKey: ['companies', search, industry, statusFilter],
-    queryFn: () => api.get('/api/companies/', { params: { search, industry, status: statusFilter } }).then(r => r.data),
+    queryKey: ['companies', search, statusFilter],
+    queryFn: () => api.get('/api/companies/', { params: { search, industry: 'credit_unions', status: statusFilter } }).then(r => r.data),
   })
 
   const updateStatus = useMutation({
@@ -610,15 +609,6 @@ function Leads() {
           <option value="">All Statuses</option>
           {Object.entries(STATUSES).map(([k, v]) => (
             <option key={k} value={k}>{v.label}</option>
-          ))}
-        </select>
-        <select
-          className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-          value={industry} onChange={e => setIndustry(e.target.value)}
-        >
-          <option value="">All Industries</option>
-          {['credit_unions', 'insurance', 'lending', 'healthcare', 'utilities'].map(i => (
-            <option key={i} value={i}>{i.replace('_', ' ')}</option>
           ))}
         </select>
       </div>
