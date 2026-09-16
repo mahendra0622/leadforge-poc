@@ -872,6 +872,25 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
                         <Row label="Loan-to-Share"
                           value={rd.loan_to_share_ratio != null ? `${rd.loan_to_share_ratio}%` : '—'}
                           color={rd.loan_to_share_ratio >= 85 ? 'text-emerald-600' : 'text-slate-800'} />
+                        {rd.indirect_ratio != null && rd.indirect_ratio > 0 && (
+                          <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                            <span className="text-sm text-slate-500">
+                              Indirect Loans
+                              {rd.indirect_loans != null && (
+                                <span className="ml-1 text-xs text-slate-400">
+                                  (${(rd.indirect_loans / 1e6).toFixed(0)}M of loans)
+                                </span>
+                              )}
+                            </span>
+                            <span className={`text-sm font-semibold ${
+                              rd.indirect_ratio >= 50 ? 'text-red-600'
+                              : rd.indirect_ratio >= 20 ? 'text-amber-600'
+                              : 'text-slate-800'
+                            }`}>
+                              {rd.indirect_ratio}%
+                            </span>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
