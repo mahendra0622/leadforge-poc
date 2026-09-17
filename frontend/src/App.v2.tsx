@@ -853,15 +853,36 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
                 <div>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Financials</p>
                   <div className="space-y-0">
-                    <Row label="Total Assets" value={detail.revenue_est ? `$${(detail.revenue_est / 1_000_000).toFixed(0)}M` : '—'} />
+                    <Row label="Total Assets"
+                      value={rd.total_assets ? `$${(rd.total_assets / 1e9).toFixed(1)}B`
+                        : detail.revenue_est ? `$${(detail.revenue_est / 1e6).toFixed(0)}M` : '—'} />
                     {isBank ? (
                       <>
-                        <Row label="Total Deposits" value={rd.total_deposits_k ? `$${(rd.total_deposits_k / 1000).toFixed(0)}M` : '—'} />
-                        <Row label="Net Loans" value={rd.net_loans_k ? `$${(rd.net_loans_k / 1000).toFixed(0)}M` : '—'} />
-                        <Row label="Equity" value={rd.equity_k ? `$${(rd.equity_k / 1000).toFixed(0)}M` : '—'} />
-                        <Row label="Loan-to-Deposit"
-                          value={rd.loan_to_deposit != null ? `${rd.loan_to_deposit}%` : '—'}
-                          color={rd.loan_to_deposit >= 90 ? 'text-emerald-600' : 'text-slate-800'} />
+                        <Row label="Net Loans"
+                          value={rd.total_loans ? `$${(rd.total_loans / 1e6).toFixed(0)}M` : '—'} />
+                        <Row label="Net Worth"
+                          value={rd.net_worth ? `$${(rd.net_worth / 1e6).toFixed(0)}M` : '—'} />
+                        <Row label="Net Worth Ratio"
+                          value={rd.net_worth_ratio != null ? `${rd.net_worth_ratio}%` : '—'}
+                          color={rd.net_worth_ratio >= 10 ? 'text-emerald-600' : rd.net_worth_ratio < 6 ? 'text-red-500' : 'text-slate-800'} />
+                        {rd.consumer_loan_ratio != null && rd.consumer_loan_ratio > 0 && (
+                          <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                            <span className="text-sm text-slate-500">
+                              Consumer Loans
+                              {rd.consumer_loans != null && (
+                                <span className="ml-1 text-xs text-slate-400">
+                                  (${(rd.consumer_loans / 1e6).toFixed(0)}M of loans)
+                                </span>
+                              )}
+                            </span>
+                            <span className={`text-sm font-semibold ${
+                              rd.consumer_loan_ratio >= 40 ? 'text-amber-600'
+                              : 'text-slate-800'
+                            }`}>
+                              {rd.consumer_loan_ratio}%
+                            </span>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>
