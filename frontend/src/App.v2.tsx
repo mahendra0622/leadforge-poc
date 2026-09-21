@@ -1874,6 +1874,22 @@ function Settings() {
   })
   const [saved, setSaved] = useState(false)
 
+  // Re-sync form when user profile loads from /api/auth/me (async after mount)
+  useEffect(() => {
+    if (!user) return
+    setForm({
+      company_name:        user.company_name        || '',
+      tagline:             user.tagline             || '',
+      product_description: user.product_description || '',
+      key_strengths:       user.key_strengths       || '',
+      differentiators:     user.differentiators     || '',
+      products:            user.products            || [],
+      case_studies:        user.case_studies        || [],
+      integrations:        user.integrations        || [],
+      tone:                user.tone                || 'consultative',
+    })
+  }, [user])
+
   const scrapeMutation = useMutation({
     mutationFn: () => api.post('/api/settings/scrape-company', { url: companyUrl }).then(r => r.data),
     onMutate: () => { setScraping(true); setScrapeError('') },
