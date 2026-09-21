@@ -16,10 +16,11 @@ from app.schemas import (
     CompanyCreate, CompanyResponse,
     ContactResponse, SignalResponse,
     GenerateMessageRequest, GenerateMessageResponse,
+    FollowUpRequest,
     CampaignCreate, CampaignResponse,
     DashboardStats,
 )
-from app.services.ai_service import generate_outreach_message
+from app.services.ai_service import generate_outreach_message, build_rag_chunks, generate_followup_message
 from app.services.ingestion import run_full_enrichment
 from app.services.source_refs import format_hover_text
 from loguru import logger
@@ -340,6 +341,8 @@ def generate_message(
         signals=signals_dict,
     )
 
+    rag_chunks = build_rag_chunks(company_data, provider_profile, signals_dict) if req.use_rag else []
+
     # Save to DB
     msg = AIMessage(
         company_id=company.id, contact_id=contact.id,
@@ -357,6 +360,53 @@ def generate_message(
         "subject_line": msg.subject_line, "body": msg.body,
         "tone": msg.tone, "tokens_used": msg.tokens_used,
         "created_at": msg.created_at,
+        "rag_chunks_used": rag_chunks,
+    }
+
+
+@ai_router.post("/generate-followup")
+def generate_followup(
+    req: FollowUpRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    company = db.query(Company).filter_by(id=req.company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+
+    signals = db.query(Signal).filter_by(company_id=company.id, is_active=True).all()
+    signals_dict = {
+        "pain_points": [{"label": s.signal_label, "urgency": s.severity} for s in signals if s.signal_type == "pain_point"],
+        "growth_signals": [{"label": s.signal_label, "strength": s.severity} for s in signals if s.signal_type == "growth"],
+        "operational_gaps": [{"label": s.signal_label, "severity": s.severity} for s in signals if s.signal_type == "operational_gap"],
+    }
+
+    company_data = {
+        "name": company.name, "industry": company.industry,
+        "hq_city": company.hq_city, "hq_state": company.hq_state,
+        "regulatory_data": company.regulatory_data or {},
+    }
+
+    provider_profile = {
+        "company_name": current_user.company_name or "our company",
+        "product_description": current_user.product_description or "",
+        "differentiators": current_user.differentiators or "",
+        "case_studies": current_user.case_studies or [],
+        "tone": current_user.tone or "consultative",
+    }
+
+    result = generate_followup_message(
+        company_data=company_data,
+        original_message=req.original_message,
+        client_response=req.client_response,
+        provider_profile=provider_profile,
+        signals=signals_dict,
+    )
+
+    return {
+        "body": result.get("body", ""),
+        "rag_chunks_used": result.get("rag_chunks_used", []),
+        "tokens_used": result.get("tokens_used", 0),
     }
 
 

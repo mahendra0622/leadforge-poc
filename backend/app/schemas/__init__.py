@@ -121,7 +121,8 @@ class GenerateMessageRequest(BaseModel):
     company_id: str
     contact_id: str
     message_type: MessageType
-    tone: Optional[str] = None  # override user profile tone
+    tone: Optional[str] = None
+    use_rag: bool = False
 
 class GenerateMessageResponse(BaseModel):
     id: str
@@ -132,9 +133,16 @@ class GenerateMessageResponse(BaseModel):
     variant: Optional[str]
     tokens_used: Optional[int]
     created_at: datetime
+    rag_chunks_used: Optional[List[dict]] = None
 
     class Config:
         from_attributes = True
+
+class FollowUpRequest(BaseModel):
+    company_id: str
+    original_message: str
+    client_response: str
+    use_rag: bool = True
 
 
 # ─── Campaign ───────────────────────────────────────────

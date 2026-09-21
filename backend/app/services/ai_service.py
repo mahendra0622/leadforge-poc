@@ -536,6 +536,186 @@ def generate_outreach_message(
 
 
 # ──────────────────────────────────────────
+# RAG: Build context chunks from available data
+# ──────────────────────────────────────────
+
+def build_rag_chunks(company_data: dict, provider_profile: dict, signals: dict) -> list:
+    """
+    Build retrieval chunks from NCUA data, signals, and provider profile.
+    No vector DB — uses structured data already in the DB as the knowledge base.
+    """
+    chunks = []
+    rd = company_data.get("regulatory_data", {}) or {}
+    company_name = company_data.get("name", "this institution")
+
+    # NCUA financials chunk
+    if rd.get("total_assets"):
+        assets_b = rd["total_assets"] / 1_000_000_000
+        roa = rd.get("roa", 0)
+        nwr = rd.get("net_worth_ratio", 0)
+        members = rd.get("total_members", 0)
+        chunks.append({
+            "type": "ncua_financials",
+            "source": f"NCUA Call Report — {company_name}",
+            "score": 0.95,
+            "content": (
+                f"{company_name}: ${assets_b:.2f}B assets, {members:,} members, "
+                f"ROA {roa:.2f}%, NWR {nwr:.1f}%. "
+                f"Loan-to-share: {rd.get('loan_to_share_ratio', 0):.1f}%."
+            ),
+        })
+
+    # Payment rails chunk
+    rtp = rd.get("is_rtp_participant")
+    fednow = rd.get("is_fednow_participant")
+    if rtp is not None or fednow is not None:
+        rail_status = []
+        if rtp:  rail_status.append("RTP participant ✓")
+        else:    rail_status.append("RTP: NOT live")
+        if fednow: rail_status.append("FedNow participant ✓")
+        else:      rail_status.append("FedNow: NOT live")
+        chunks.append({
+            "type": "payment_rails",
+            "source": "TCH RTP + FedNow Registry",
+            "score": 0.90,
+            "content": f"{company_name} payment rails: {' | '.join(rail_status)}",
+        })
+
+    # Signals chunks (top 2 pain points)
+    for pp in signals.get("pain_points", [])[:2]:
+        chunks.append({
+            "type": "pain_point",
+            "source": f"Signal: {company_name}",
+            "score": round(0.70 + pp.get("urgency", 50) / 500, 2),
+            "content": f"Pain point: {pp['label']} (urgency {pp.get('urgency', 50)}/100)",
+        })
+
+    # Provider case studies (most relevant to financial institutions)
+    for cs in (provider_profile.get("case_studies") or [])[:3]:
+        if isinstance(cs, dict):
+            chunks.append({
+                "type": "case_study",
+                "source": f"Case Study: {cs.get('customer', 'Client')}",
+                "score": 0.88,
+                "content": f"{cs.get('customer')}: {cs.get('outcome')}",
+            })
+
+    # Provider differentiators
+    diff = provider_profile.get("differentiators", "")
+    if diff:
+        chunks.append({
+            "type": "product_context",
+            "source": f"{provider_profile.get('company_name', 'Provider')} — Differentiators",
+            "score": 0.92,
+            "content": diff,
+        })
+
+    return chunks[:6]  # cap at 6 chunks
+
+
+FOLLOWUP_PROMPT = """You are a senior B2B fintech sales strategist. Write a follow-up email responding to a prospect's reply.
+
+ORIGINAL EMAIL SENT:
+{original_message}
+
+PROSPECT'S REPLY:
+{client_response}
+
+COMPANY CONTEXT (use this to personalise):
+{company_context}
+
+PROVIDER (your company):
+{provider_name} — {product_description}
+Differentiators: {differentiators}
+Relevant case studies:
+{case_studies}
+
+INSTRUCTIONS:
+1. Acknowledge their specific reply — mirror the language they used
+2. Address any objections directly (no core replacement, timeline concerns, budget questions)
+3. Bridge to our strongest relevant case study or differentiator
+4. Single, low-friction CTA (15-min call, specific date suggestion, or sharing a one-pager)
+5. Tone: warm, confident, no fluff. 3–4 short paragraphs max.
+6. Do NOT use subject line — that's a reply thread.
+
+Return ONLY the email body text. No subject line. No markdown. No preamble."""
+
+
+def generate_followup_message(
+    company_data: dict,
+    original_message: str,
+    client_response: str,
+    provider_profile: dict,
+    signals: dict,
+) -> dict:
+    """Generate a follow-up email informed by the prospect's actual reply."""
+    rag_chunks = build_rag_chunks(company_data, provider_profile, signals)
+
+    if not settings.ANTHROPIC_API_KEY:
+        return _mock_followup_message(client_response, company_data, provider_profile, rag_chunks)
+
+    try:
+        client = get_anthropic()
+
+        rd = company_data.get("regulatory_data", {}) or {}
+        assets_b = rd.get("total_assets", 0) / 1_000_000_000
+        company_context = (
+            f"{company_data.get('name')} | {company_data.get('industry', 'Credit Union')} | "
+            f"${assets_b:.1f}B assets | "
+            f"RTP: {'live' if rd.get('is_rtp_participant') else 'not live'} | "
+            f"FedNow: {'live' if rd.get('is_fednow_participant') else 'not live'}"
+        )
+
+        case_studies_str = "\n".join([
+            f"- {cs.get('customer')}: {cs.get('outcome')}"
+            for cs in (provider_profile.get("case_studies") or [])[:3]
+            if isinstance(cs, dict)
+        ]) or "- Proven implementations at similar institutions"
+
+        prompt = FOLLOWUP_PROMPT.format(
+            original_message=original_message[:800],
+            client_response=client_response,
+            company_context=company_context,
+            provider_name=provider_profile.get("company_name", ""),
+            product_description=provider_profile.get("product_description", "")[:200],
+            differentiators=provider_profile.get("differentiators", "")[:300],
+            case_studies=case_studies_str,
+        )
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=600,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        body = response.content[0].text.strip()
+        tokens = response.usage.input_tokens + response.usage.output_tokens
+
+        return {
+            "body": body,
+            "rag_chunks_used": rag_chunks,
+            "tokens_used": tokens,
+            "model": "claude-sonnet-4-20250514",
+        }
+
+    except Exception as e:
+        logger.error(f"Follow-up generation failed: {e}")
+        return _mock_followup_message(client_response, company_data, provider_profile, rag_chunks)
+
+
+def _mock_followup_message(client_response: str, company: dict, profile: dict, chunks: list) -> dict:
+    pname = profile.get("company_name", "us")
+    cname = company.get("name", "your institution")
+    body = f"""Thanks for getting back to me — really appreciate the candid context.
+
+The core-replacement concern is one we hear often, and it's exactly why {pname} was built the way it is. Our payment hub layers on top of your existing core (Fiserv, Jack Henry, FIS — all supported) via a single API connection. There's no rip-and-replace, no data migration, no months-long implementation.
+
+We've done this at institutions similar to {cname}. BECU went live on RTP in under 90 days. Alliant replaced three separate vendor relationships with our single platform and cut ops cost by 40%. Both kept their existing cores untouched.
+
+Would a 15-minute call work this week? I can walk you through exactly how the integration would look on your stack — no commitment, just clarity. Thursday at 2pm or Friday morning work for you?"""
+    return {"body": body, "rag_chunks_used": chunks, "tokens_used": 0, "model": "mock"}
+
+
+# ──────────────────────────────────────────
 # Mock fallbacks (for dev without API keys)
 # ──────────────────────────────────────────
 def _mock_signal_detection(company_data: dict) -> dict:
