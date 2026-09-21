@@ -68,45 +68,44 @@ Rules:
 # ──────────────────────────────────────────
 # Personalized Outreach Prompts
 # ──────────────────────────────────────────
-EMAIL_PROMPT = """You are a senior B2B fintech sales strategist with deep expertise in {industry}.
+EMAIL_PROMPT = """You are a senior B2B fintech sales strategist. Write a cold outreach email using the Value Selling + Purple Cow framework.
 
-Write a personalized cold email for this prospect:
-Contact: {contact_name}, {contact_title} at {company_name}
-Industry: {industry}
-Location: {location}
+PROSPECT:
+{contact_name}, {contact_title} at {company_name} ({location})
+Industry: {industry} | Digital Maturity: {digital_maturity}/5 ({maturity_label})
 
-COMPANY INTELLIGENCE:
-Revenue: {revenue}
-Digital Maturity: {digital_maturity}/5 ({maturity_label})
-Opportunity Score: {opportunity_score}/100
+FINANCIAL INTELLIGENCE — this is your Purple Cow material. Pick the single most striking metric and lead with it:
+{financial_intel}
 
-KEY PAIN POINTS DETECTED:
-{pain_points}
+SIGNALS:
+Pain points: {pain_points}
+Operational gaps: {operational_gaps}
+Growth signals: {growth_signals}
 
-GROWTH SIGNALS DETECTED:
-{growth_signals}
-
-OPERATIONAL GAPS:
-{operational_gaps}
-
-YOUR FINTECH PRODUCT:
-Company: {provider_name}
-Product: {product_description}
-Key Strengths: {key_strengths}
+YOUR SOLUTION:
+{provider_name} — {product_description}
 Differentiators: {differentiators}
 Tone: {tone}
 
-RULES:
-- Do NOT start with "I hope this email finds you well" or any variation
-- Do NOT use {first_name} placeholders — use the actual name
-- Open with a specific, compelling observation about {company_name}
-- Reference one SPECIFIC pain point or signal in the first 2 sentences
-- Keep under 220 words
-- One clear, soft CTA at the end (suggest a 20-minute call)
-- No bullet points in the email body
-- Sound human, not AI-generated
+FRAMEWORK — Value Selling + Purple Cow:
 
-Return ONLY the email body. Do not include subject line here."""
+1. PURPLE COW HOOK (1–2 sentences): Open with ONE hyper-specific financial metric from the data above that {contact_name} will immediately recognise about their own institution. Use the actual number. This is not a generic observation — it must feel like you did real research on {company_name} specifically.
+
+2. VALUE FRAME (2–3 sentences): Convert that metric into business impact — member/customer experience, revenue risk, or competitive exposure. Quantify where possible. Sell the problem's cost, not the product's features.
+
+3. BRIDGE (1 sentence): Connect the problem to the specific outcome {provider_name} delivers. Lead with the result, not the mechanism.
+
+4. CTA: One confident, specific ask — a 20-minute call. Name a day or say "this week." Do not hedge or apologise.
+
+RULES:
+- Under 200 words
+- Never start with "I hope", "My name is", or any generic opener
+- No bullet points in the body
+- Use {contact_name}'s actual name — no placeholders
+- Every sentence must be specific to {company_name}. If a sentence could apply to any institution, delete it.
+- Sound like a knowledgeable peer, not a vendor
+
+Return ONLY the email body. No subject line."""
 
 
 SUBJECT_LINE_PROMPT = """Write 3 compelling subject lines for a cold sales email to {contact_name} at {company_name}.
@@ -142,33 +141,131 @@ Rules:
 Return ONLY the message text."""
 
 
-CALL_SCRIPT_PROMPT = """You are a senior fintech sales trainer. Write a structured 5-minute discovery call script.
+CALL_SCRIPT_PROMPT = """You are an elite fintech sales coach. Write a professional cold call script using the Saad Khaja framework: lead with data, sell the problem not the product, and close for a specific next step.
 
-Prospect: {contact_name}, {contact_title} at {company_name}
-Industry: {industry}
-Pain points: {pain_points}
-Growth signals: {growth_signals}
-Fintech provider: {provider_name} — {product_description}
+PROSPECT: {contact_name}, {contact_title} at {company_name}
+INDUSTRY: {industry}
 
-Format:
-OPENER (0:00–0:30):
-[Script]
+FINANCIAL INTELLIGENCE — choose ONE striking metric as your data hook:
+{financial_intel}
 
-BRIDGE — PROBLEM DISCOVERY (0:30–2:00):
-[Script with 2-3 discovery questions]
+PAIN POINTS: {pain_points}
+GROWTH SIGNALS: {growth_signals}
+YOUR SOLUTION: {provider_name} — {product_description}
 
-VALUE HOOK (2:00–3:30):
-[Script referencing a relevant case study outcome]
+Write the script in this exact structure:
 
-CLOSE (3:30–5:00):
-[Script to book next step]
+---
+OPENER (0:00–0:20)
+[Permission-based. State your name and {provider_name} in one sentence. Pause 8 seconds. Then ask: "Is now a bad time?" — never "Is now a good time?" Warm and confident, not robotic.]
 
-OBJECTION HANDLING:
-- "We already have a vendor": [Response]
-- "Not the right time": [Response]  
-- "Budget constraints": [Response]
+DATA HOOK (0:20–0:45)
+[Deliver ONE specific financial metric from the intelligence above. Frame it as an observation, not an accusation. Example structure: "I was looking at [company]'s [metric] and noticed [specific number] — which puts you [above/below] most [peers] in [region/tier]. Is that a fair read?"]
 
-Keep it conversational. Include timing notes. Reference specific company details."""
+PROBLEM DISCOVERY (0:45–2:30)
+Q1: [Opens the problem space — ask about their current experience with this challenge, not whether they have it]
+Q2: [Deepens the pain — ask about the downstream effect on members/customers/revenue]
+Q3: [Quantifies impact — ask what solving this would mean for them this year]
+
+VALUE POSITIONING (2:30–3:30)
+[Outcome-first. Describe the result {provider_name} delivers, not how the product works. Reference a comparable institution size or type. Do not list features.]
+
+CLOSE (3:30–5:00)
+[Confident specific ask. Offer two concrete time options for a 15-minute discovery call. Do not over-explain. Silence is okay after the ask.]
+
+OBJECTION RESPONSES:
+"We already have a vendor for that" →
+[Acknowledge, then pivot to the specific gap the financial data reveals that their current vendor isn't addressing.]
+
+"Not the right time / tight budget" →
+[Reframe using the financial metric — translate the cost of inaction into dollars or competitive risk. Ask: "When would the timing be right — Q1?"]
+
+"Send me an email first" →
+[Agree immediately. Confirm their email. Then ask: "While I have you — is [specific pain point] something your team is actively looking at?"]
+---
+
+Keep every line conversational and natural when spoken aloud. Include timing cues throughout."""
+
+
+# ──────────────────────────────────────────
+# Financial Intelligence Builder
+# ──────────────────────────────────────────
+
+def _build_financial_intel(company_data: dict) -> str:
+    """
+    Build a financial intelligence context string from regulatory_data.
+    Used as the Purple Cow material in email and call script prompts.
+    """
+    rd = company_data.get("regulatory_data") or {}
+    industry = company_data.get("industry", "")
+    is_cu = "credit_union" in industry
+
+    lines = []
+
+    assets = rd.get("total_assets", 0)
+    if assets:
+        lines.append(f"Total Assets: ${assets / 1e9:.1f}B")
+
+    roa = rd.get("roa")
+    if roa is not None:
+        peer_median = 0.75 if is_cu else 1.10
+        delta = round(float(roa) - peer_median, 2)
+        direction = "above" if delta >= 0 else "below"
+        lines.append(
+            f"ROA: {roa}% — {abs(delta)}% {direction} peer median ({peer_median}%)"
+        )
+
+    nwr = rd.get("net_worth_ratio")
+    if nwr is not None:
+        health = "well-capitalised" if nwr >= 7 else "approaching capital pressure"
+        lines.append(f"Net Worth / Capital Ratio: {nwr}% ({health})")
+
+    if is_cu:
+        lts = rd.get("loan_to_share_ratio")
+        if lts is not None:
+            note = "high loan demand" if lts >= 85 else "capacity available"
+            lines.append(f"Loan-to-Share Ratio: {lts}% ({note})")
+
+        indirect = rd.get("indirect_ratio")
+        if indirect and float(indirect) > 0:
+            tier = (
+                "heavy indirect exposure" if indirect >= 50
+                else "significant indirect book" if indirect >= 20
+                else "moderate indirect lending"
+            )
+            indirect_usd = rd.get("indirect_loans", 0)
+            dollar_note = f" (${indirect_usd / 1e6:.0f}M)" if indirect_usd else ""
+            lines.append(f"Indirect Loan Exposure: {indirect}% of total loans{dollar_note} — {tier}")
+    else:
+        consumer = rd.get("consumer_loan_ratio")
+        if consumer and float(consumer) > 0:
+            capped = min(float(consumer), 100)
+            note = "specialist consumer lender" if consumer > 100 else (
+                "high consumer concentration" if consumer >= 40 else "moderate consumer mix"
+            )
+            consumer_usd = rd.get("consumer_loans", 0)
+            dollar_note = f" (${consumer_usd / 1e6:.0f}M)" if consumer_usd else ""
+            lines.append(f"Consumer Loan Concentration: {capped:.1f}%{dollar_note} — {note}")
+
+    rtp = rd.get("is_rtp_participant")
+    fednow = rd.get("is_fednow_participant")
+    if rtp is not None or fednow is not None:
+        rail_parts = []
+        if rtp:  rail_parts.append("on RTP")
+        else:    rail_parts.append("NOT on RTP")
+        if fednow:  rail_parts.append("on FedNow")
+        else:       rail_parts.append("NOT on FedNow")
+        lines.append(f"Real-Time Payment Rails: {', '.join(rail_parts)}")
+
+    core = rd.get("core_processor")
+    if core:
+        lines.append(f"Core Processor: {core}")
+
+    members = rd.get("total_members")
+    if members and is_cu:
+        lines.append(f"Members: {members:,}")
+
+    return "\n".join(lines) if lines else "Detailed financial data not yet available — use industry context."
 
 
 # ──────────────────────────────────────────
@@ -340,6 +437,9 @@ def generate_outreach_message(
         tone = provider_profile.get("tone", "consultative")
         location = f"{company_data.get('hq_city', '')}, {company_data.get('hq_state', '')}"
 
+        # Build financial intelligence block (Purple Cow source material)
+        financial_intel = _build_financial_intel(company_data)
+
         if message_type == "email":
             body_prompt = EMAIL_PROMPT.format(
                 contact_name=f"{contact_data.get('first_name', '')} {contact_data.get('last_name', '')}".strip(),
@@ -347,16 +447,14 @@ def generate_outreach_message(
                 company_name=company_data.get("name", ""),
                 industry=company_data.get("industry", ""),
                 location=location,
-                revenue=f"${company_data.get('revenue_est', 0):,}" if company_data.get("revenue_est") else "growing organization",
                 digital_maturity=signals.get("digital_maturity", 3),
                 maturity_label=maturity_label,
-                opportunity_score=signals.get("opportunity_score", 50),
+                financial_intel=financial_intel,
                 pain_points=pain_points_str,
                 growth_signals=growth_signals_str,
                 operational_gaps=gaps_str,
                 provider_name=provider_profile.get("company_name", "our platform"),
                 product_description=provider_profile.get("product_description", ""),
-                key_strengths=provider_profile.get("key_strengths", ""),
                 differentiators=provider_profile.get("differentiators", ""),
                 tone=tone,
             )
@@ -408,12 +506,13 @@ def generate_outreach_message(
         else:  # call_script
             cs_response = client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=1200,
+                max_tokens=1500,
                 messages=[{"role": "user", "content": CALL_SCRIPT_PROMPT.format(
                     contact_name=f"{contact_data.get('first_name', '')} {contact_data.get('last_name', '')}".strip(),
                     contact_title=contact_data.get("title", ""),
                     company_name=company_data.get("name", ""),
                     industry=company_data.get("industry", ""),
+                    financial_intel=financial_intel,
                     pain_points=pain_points_str,
                     growth_signals=growth_signals_str,
                     provider_name=provider_profile.get("company_name", ""),

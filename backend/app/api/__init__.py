@@ -323,6 +323,7 @@ def generate_message(
         "hq_city": company.hq_city, "hq_state": company.hq_state,
         "revenue_est": company.revenue_est, "employee_count": company.employee_count,
         "tech_stack": company.tech_stack or [],
+        "regulatory_data": company.regulatory_data or {},
     }
 
     contact_data = {
