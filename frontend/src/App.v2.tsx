@@ -578,11 +578,17 @@ function Leads() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [selected, setSelected] = useState<any>(null)
+  const [page, setPage] = useState(1)
   const qc = useQueryClient()
 
+  // Reset to page 1 whenever filters change
+  useEffect(() => { setPage(1) }, [search, statusFilter])
+
   const { data, isLoading } = useQuery({
-    queryKey: ['companies', search, statusFilter],
-    queryFn: () => api.get('/api/companies/', { params: { search, industry: 'credit_unions', status: statusFilter } }).then(r => r.data),
+    queryKey: ['companies', search, statusFilter, page],
+    queryFn: () => api.get('/api/companies/', {
+      params: { search, industry: 'credit_unions', status: statusFilter, page, per_page: 25 }
+    }).then(r => r.data),
   })
 
   const updateStatus = useMutation({
@@ -660,6 +666,23 @@ function Leads() {
                 ))}
               </tbody>
             </table>
+            {data?.total > 25 && (
+              <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-slate-50">
+                <span className="text-xs text-slate-500">
+                  {(page - 1) * 25 + 1}–{Math.min(page * 25, data.total)} of {data.total} credit unions
+                </span>
+                <div className="flex gap-2">
+                  <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium">
+                    ← Prev
+                  </button>
+                  <button disabled={page * 25 >= data.total} onClick={() => setPage(p => p + 1)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium">
+                    Next →
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -673,12 +696,15 @@ function Banks() {
   const [search, setSearch]       = useState('')
   const [statusFilter, setStatus] = useState('')
   const [selected, setSelected]   = useState<any>(null)
+  const [page, setPage]           = useState(1)
   const qc = useQueryClient()
 
+  useEffect(() => { setPage(1) }, [search, statusFilter])
+
   const { data, isLoading } = useQuery({
-    queryKey: ['banks', search, statusFilter],
+    queryKey: ['banks', search, statusFilter, page],
     queryFn: () => api.get('/api/companies/', {
-      params: { search, industry: 'community_banks', status: statusFilter }
+      params: { search, industry: 'community_banks', status: statusFilter, page, per_page: 25 }
     }).then(r => r.data),
   })
 
@@ -717,7 +743,7 @@ function Banks() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  {['Bank', 'Score', 'Assets', 'NIM', 'ROA', 'Status', 'Signals', ''].map(h => (
+                  {['Bank', 'Score', 'Assets ($B)', 'Consumer Loans', 'ROA', 'Status', 'Signals', ''].map(h => (
                     <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -725,10 +751,14 @@ function Banks() {
               <tbody>
                 {data?.data?.map((co: any) => {
                   const rd = co.regulatory_data || {}
-                  const assetB = co.revenue_est ? (co.revenue_est / 1e9).toFixed(1) : '—'
-                  const nim = rd.nim != null ? `${rd.nim}%` : '—'
-                  const roa = rd.roa != null ? `${rd.roa}%` : '—'
-                  const nimColor = !rd.nim ? '' : rd.nim >= 4 ? 'text-emerald-600' : rd.nim < 2.8 ? 'text-red-500' : 'text-amber-500'
+                  const assetB = rd.total_assets ? (rd.total_assets / 1e9).toFixed(1)
+                    : co.revenue_est ? (co.revenue_est / 1e9).toFixed(1) : '—'
+                  const roa = rd.roa != null ? `${rd.roa.toFixed(2)}%` : '—'
+                  const roaColor = !rd.roa ? 'text-slate-600'
+                    : rd.roa >= 1.2 ? 'text-emerald-600' : rd.roa < 0.8 ? 'text-red-500' : 'text-amber-500'
+                  const clr = rd.consumer_loan_ratio != null ? rd.consumer_loan_ratio : null
+                  const clrCapped = clr != null ? Math.min(clr, 100) : null
+                  const clrColor = clr == null ? '' : clr >= 40 ? 'text-amber-600' : 'text-slate-600'
                   return (
                     <tr key={co.id} className="border-b border-slate-50 hover:bg-blue-50/20 transition-colors">
                       <td className="px-5 py-3.5">
@@ -737,8 +767,10 @@ function Banks() {
                       </td>
                       <td className="px-5 py-3.5"><Badge score={co.opportunity_score} /></td>
                       <td className="px-5 py-3.5 text-xs text-slate-600 font-medium">${assetB}B</td>
-                      <td className={`px-5 py-3.5 text-xs font-semibold ${nimColor}`}>{nim}</td>
-                      <td className="px-5 py-3.5 text-xs text-slate-600">{roa}</td>
+                      <td className={`px-5 py-3.5 text-xs font-semibold ${clrColor}`}>
+                        {clr == null ? '—' : clr > 100 ? '≥100%' : `${clrCapped}%`}
+                      </td>
+                      <td className={`px-5 py-3.5 text-xs font-semibold ${roaColor}`}>{roa}</td>
                       <td className="px-5 py-3.5">
                         <StatusSelect value={co.outreach_status || 'new'}
                           onChange={s => updateStatus.mutate({ id: co.id, status: s })} />
@@ -758,6 +790,23 @@ function Banks() {
                 })}
               </tbody>
             </table>
+            {data?.total > 25 && (
+              <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-slate-50">
+                <span className="text-xs text-slate-500">
+                  {(page - 1) * 25 + 1}–{Math.min(page * 25, data.total)} of {data.total} banks
+                </span>
+                <div className="flex gap-2">
+                  <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium">
+                    ← Prev
+                  </button>
+                  <button disabled={page * 25 >= data.total} onClick={() => setPage(p => p + 1)}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium">
+                    Next →
+                  </button>
+                </div>
+              </div>
+            )}
             {(!data?.data?.length) && !isLoading && (
               <div className="text-center py-16 text-slate-400">
                 <p className="font-medium">No community banks found.</p>
@@ -874,12 +923,14 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
                                   (${(rd.consumer_loans / 1e6).toFixed(0)}M of loans)
                                 </span>
                               )}
+                              {rd.consumer_loan_ratio > 100 && (
+                                <span className="ml-1 text-xs text-slate-400 italic">specialist lender</span>
+                              )}
                             </span>
                             <span className={`text-sm font-semibold ${
-                              rd.consumer_loan_ratio >= 40 ? 'text-amber-600'
-                              : 'text-slate-800'
+                              rd.consumer_loan_ratio >= 40 ? 'text-amber-600' : 'text-slate-800'
                             }`}>
-                              {rd.consumer_loan_ratio}%
+                              {rd.consumer_loan_ratio > 100 ? '≥100%' : `${rd.consumer_loan_ratio}%`}
                             </span>
                           </div>
                         )}
@@ -984,7 +1035,7 @@ function LeadDrawer({ company, onClose }: { company: any; onClose: () => void })
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Technology</p>
                   <div className="space-y-0">
                     {[
-                      ['Core Processor',  (detail.tech_stack || []).filter(Boolean).join(', ') || '—', 'text-slate-800'],
+                      ['Core Processor', rd.core_processor || (detail.tech_stack || []).filter(Boolean).join(', ') || '—', 'text-slate-800'],
                       ['Digital Maturity', `${detail.digital_maturity || '—'} / 5`, 'text-slate-800'],
                     ].map(([k, v, color]) => (
                       <div key={k as string} className="flex items-center justify-between py-2 border-b border-slate-100">
