@@ -256,6 +256,24 @@ class OutreachEvent(Base):
 
 
 # ──────────────────────────────────────────
+# TRENDING TOPICS
+# ──────────────────────────────────────────
+class TrendingTopic(Base):
+    __tablename__ = "trending_topics"
+
+    id           = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    theme        = Column(String(255), nullable=False)
+    icon         = Column(String(10), default="📈")
+    summary      = Column(Text)
+    heat_score   = Column(Integer, default=50)   # 0–100
+    article_count = Column(Integer, default=0)
+    articles     = Column(JSON, default=list)    # [{title, source, url, published_at, snippet}]
+    tags         = Column(ARRAY(String), default=list)
+    refreshed_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at   = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# ──────────────────────────────────────────
 # EMAIL THREAD LINK
 # ──────────────────────────────────────────
 class EmailThreadLink(Base):

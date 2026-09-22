@@ -12,7 +12,7 @@ from app.db.database import init_db
 from app.api import (
     auth_router, companies_router, ai_router,
     pipeline_router, campaigns_router, dashboard_router,
-    apollo_router_obj, ncua_router,
+    apollo_router_obj, ncua_router, trending_router,
 )
 from app.api.company_scrape import router as company_scrape_router
 from app.api.gmail_auth import router as gmail_router
@@ -56,6 +56,7 @@ app.include_router(apollo_router_obj, prefix="/api/apollo",    tags=["Apollo"])
 app.include_router(ncua_router,       prefix="/api/ncua",      tags=["NCUA + CUNA"])
 
 # NEW: Company URL scraper (Settings auto-fill) + Gmail OAuth + outreach send
+app.include_router(trending_router,       prefix="/api/trending", tags=["Trending"])
 app.include_router(company_scrape_router, tags=["Settings"])
 app.include_router(gmail_router,          tags=["Gmail"])
 app.include_router(tracking_router,       tags=["Tracking"])

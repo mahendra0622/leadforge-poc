@@ -10,7 +10,7 @@ from datetime import datetime
 
 from app.db.database import get_db
 from app.core.security import get_current_user, create_access_token, hash_password, verify_password
-from app.models import Company, Contact, Signal, AIMessage, Campaign, OutreachEvent, User
+from app.models import Company, Contact, Signal, AIMessage, Campaign, OutreachEvent, User, TrendingTopic
 from app.schemas import (
     UserRegister, UserLogin, TokenResponse, UserProfile,
     CompanyCreate, CompanyResponse,
@@ -506,6 +506,34 @@ def trigger_enrich(company_id: str, background_tasks: BackgroundTasks, db: Sessi
     background_tasks.add_task(run_ai_signal_detection, company, db)
     return {"status": "enrichment_queued", "company": company.name}
 
+
+# ──────────────────────────────────────────
+# TRENDING
+# ──────────────────────────────────────────
+trending_router = APIRouter()
+
+
+@trending_router.get("/")
+def get_trending(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
+    topics = (
+        db.query(TrendingTopic)
+        .order_by(TrendingTopic.heat_score.desc())
+        .all()
+    )
+    return [
+        {
+            "id":            t.id,
+            "theme":         t.theme,
+            "icon":          t.icon,
+            "summary":       t.summary,
+            "heat_score":    t.heat_score,
+            "article_count": t.article_count,
+            "articles":      t.articles or [],
+            "tags":          t.tags or [],
+            "refreshed_at":  t.refreshed_at,
+        }
+        for t in topics
+    ]
 
 # ──────────────────────────────────────────
 # NCUA / CUNA REGULATORY ROUTES
