@@ -1,8 +1,5 @@
 """
-seed_trending.py
-=================
-Seeds fintech trending topics. Every URL here has been verified to return HTTP 200.
-Sources: PYMNTS, American Banker, Digital Transactions, ABA Banking Journal, Federal Reserve.
+seed_trending.py — fintech trending topics (2026 only, all URLs verified 200)
 """
 import os, sys, uuid
 from datetime import datetime, timedelta
@@ -21,281 +18,277 @@ now = datetime.utcnow()
 
 TOPICS = [
     {
-        "theme": "FedNow Crosses 1,000 Participants",
+        "theme": "FedNow Hits 1,800 Participants & Goes Cross-Border",
         "icon": "⚡",
         "heat_score": 96,
         "summary": (
-            "FedNow surpassed 900 live financial institutions one year after launch, with "
-            "community banks and credit unions making up 78% of participants. "
-            "By end of 2024 the network exceeded 1,000 FIs. New use cases — pay-by-bank, "
-            "instant payroll, real estate closings — are accelerating adoption. "
-            "CUs not yet live are losing the first-mover window."
+            "Three years in, FedNow serves 1,800 financial institutions — reaching over half "
+            "of all US checking accounts. Transaction volume rose 117% year-over-year in Q2 2026. "
+            "The Fed's April proposal to allow cross-border transfers via intermediaries is the "
+            "network's biggest structural change yet. CUs not live are falling further behind."
         ),
-        "tags": ["fednow", "real-time-payments", "credit-unions", "instant-payments"],
+        "tags": ["fednow", "real-time-payments", "cross-border", "credit-unions"],
         "articles": [
             {
-                "title": "FedNow Financial Institutions Now Total More Than 900",
-                "source": "Digital Transactions",
-                "url": "https://www.digitaltransactions.net/fednow-financial-institutions-now-total-more-than-900/",
-                "published_at": "2024-08-01",
-                "snippet": "One year after launch, FedNow reached over 900 participating FIs — community banks and credit unions make up 78% of that total.",
-            },
-            {
-                "title": "First the Launch, Then the Execution: FedNow Turns One",
+                "title": "Fed Rewrites Rules to Bring Cross-Border Payments to FedNow",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/real-time-payments/2024/first-the-launch-then-the-execution-fednow-turns-one/",
-                "published_at": "2024-07-20",
-                "snippet": "A year into FedNow's life, the focus shifts from onboarding to volume — and the real test begins for instant payment use cases.",
+                "url": "https://www.pymnts.com/news/cross-border-commerce/cross-border-payments/2026/fed-rewrites-rules-to-bring-cross-border-payments-to-fednow/",
+                "published_at": "2026-04-10",
+                "snippet": "The Federal Reserve proposed allowing US banks and credit unions to use intermediaries for cross-border transfers through FedNow — a major expansion of the network's scope.",
             },
             {
-                "title": "Why New Use Cases Like Pay by Bank Will Fast-Track FedNow",
+                "title": "FedNow Readies Cross-Border and Request-for-Payment Pilot",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/real-time-payments/2024/why-fednow-network-may-launch-instant-payments-toward-ubiquity/",
-                "published_at": "2024-06-15",
-                "snippet": "Pay-by-bank and account-to-account transfers could be the killer apps that push FedNow past the tipping point for ubiquity.",
+                "url": "https://www.pymnts.com/real-time-payments/2026/fednow-service-readies-cross-border-capabilities-and-request-for-payment-pilot/",
+                "published_at": "2026-05-18",
+                "snippet": "FedNow is piloting two capabilities simultaneously: cross-border interoperability and a request-for-payment feature — both aimed at closing the gap with Zelle and RTP.",
             },
             {
-                "title": "FedNow Service Ends the Year with Continued Momentum and Lessons Learned",
+                "title": "Fed Proposes Opening FedNow to Cross-Border Payments",
                 "source": "ABA Banking Journal",
-                "url": "https://bankingjournal.aba.com/2024/12/fednow-service-ends-the-year-with-continued-momentum-and-lessons-learned/",
-                "published_at": "2024-12-10",
-                "snippet": "The ABA reviews FedNow's first 18 months: what worked, what stalled, and what community banks and credit unions need to prepare for in 2025.",
+                "url": "https://bankingjournal.aba.com/2026/04/fed-proposes-opening-fednow-to-cross-border-payments/",
+                "published_at": "2026-04-08",
+                "snippet": "ABA analysis of the Fed's cross-border proposal: what community banks and credit unions need to know about the rule change and its compliance implications.",
             },
             {
-                "title": "FedNow Closes 2023 With 300-Plus FIs Using Instant Payments Network",
+                "title": "FedNow Fortifies Security for Instant Payments",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/news/faster-payments/2023/fednow-closes-2023-with-300-plus-fis-using-instant-payments-network/",
-                "published_at": "2023-12-28",
-                "snippet": "The Federal Reserve's FedNow Service ended 2023 with over 300 participating financial institutions — a foundation for the rapid growth ahead in 2024.",
+                "url": "https://www.pymnts.com/news/faster-payments/2026/fednow-service-fortifies-security-for-instant-payments/",
+                "published_at": "2026-04-28",
+                "snippet": "Federal Reserve Financial Services launched a network intelligence API for FedNow that gives participating FIs real-time, account-level risk data to counter fraud at the moment of transfer.",
+            },
+            {
+                "title": "How FedNow Is a Catalyst for Credit Union Disruption",
+                "source": "American Banker",
+                "url": "https://www.americanbanker.com/payments/news/how-fednow-is-a-catalyst-for-credit-union-disruption",
+                "published_at": "2026-06-03",
+                "snippet": "FedNow is pushing credit unions to rethink their payment strategy from the ground up — early adopters are using instant payments as a member-acquisition wedge against big banks.",
             },
         ],
     },
     {
-        "theme": "AI in Banking Moves From Pilot to Production",
+        "theme": "AI Moves From Pilot to Production at Credit Unions",
         "icon": "🤖",
         "heat_score": 91,
         "summary": (
-            "Generative AI is graduating from internal pilots to live member-facing products. "
-            "Credit unions are deploying AI for fraud prevention, loan underwriting, and "
-            "contact centers. Michigan State University FCU blocked $2.57M in deepfake fraud "
-            "using AI voice detection. Tennessee CU is using GenAI to foster fair lending. "
-            "Institutions that move now are building a durable competitive advantage."
+            "43% of credit unions now say generative AI is the top technology reshaping their "
+            "operations in 2026. AI chat, member retention modelling, and AI-agent-initiated "
+            "payments are moving from proof-of-concept to live deployments. CUs that don't offer "
+            "AI chat risk being cut out of member financial conversations entirely."
         ),
-        "tags": ["ai", "generative-ai", "underwriting", "fraud", "credit-unions"],
+        "tags": ["ai", "generative-ai", "member-retention", "credit-unions", "ai-agents"],
         "articles": [
             {
-                "title": "Michigan Credit Union Blocks Fraud with Deepfake Detection",
-                "source": "American Banker",
-                "url": "https://www.americanbanker.com/creditunions/news/michigan-credit-union-blocks-fraud-with-deepfake-detection",
-                "published_at": "2024-11-04",
-                "snippet": "MSUFCU avoided $2.57M in fraud exposure after deploying AI-powered deepfake detection in its call center — a growing threat vector for credit unions.",
-            },
-            {
-                "title": "How a Tennessee Credit Union Uses Generative AI to Foster Fair Lending",
-                "source": "American Banker",
-                "url": "https://www.americanbanker.com/creditunions/news/how-a-tennessee-credit-union-uses-generative-ai-to-foster-fair-lending",
-                "published_at": "2024-09-17",
-                "snippet": "A Tennessee credit union is using generative AI to review lending decisions for bias — demonstrating that AI can improve fairness, not just efficiency.",
-            },
-            {
-                "title": "Credit Unions Venture Cautiously Into AI to Make Operations Smoother",
-                "source": "American Banker",
-                "url": "https://www.americanbanker.com/creditunions/news/credit-unions-venture-cautiously-into-ai-to-make-operations-smoother",
-                "published_at": "2024-08-22",
-                "snippet": "Most credit unions are starting AI adoption at the edges — call center automation and fraud detection — before bringing it into core lending workflows.",
-            },
-            {
-                "title": "North Island Credit Union Adds Generative AI Tech",
-                "source": "American Banker",
-                "url": "https://www.americanbanker.com/creditunions/news/north-island-credit-union-adds-generative-ai-tech",
-                "published_at": "2024-07-09",
-                "snippet": "North Island Credit Union deployed a generative AI-powered member chatbot — one of the first credit unions to bring GenAI into direct member service.",
-            },
-            {
-                "title": "GenAI Can Help Credit Unions Match Payments Innovation to Member Needs",
+                "title": "Credit Unions Prepare for the Day AI Agents Start Spending",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/news/artificial-intelligence/2024/genai-can-help-credit-unions-match-payments-innovation-to-member-needs/",
-                "published_at": "2024-10-22",
-                "snippet": "PYMNTS research finds credit unions deploying generative AI report stronger member retention and faster product development cycles.",
+                "url": "https://www.pymnts.com/credit-unions/2026/credit-unions-prepare-for-the-day-ai-agents-start-spending/",
+                "published_at": "2026-07-22",
+                "snippet": "AI agents capable of initiating payments autonomously on behalf of members are arriving. Credit unions are auditing their authentication and authorization frameworks before the wave hits.",
+            },
+            {
+                "title": "New Study Finds AI Critical to Credit Union Member Retention",
+                "source": "PYMNTS",
+                "url": "https://www.pymnts.com/credit-unions/2026/new-study-finds-ai-critical-to-credit-union-member-retention/",
+                "published_at": "2026-06-15",
+                "snippet": "Members who've switched FIs were 122% more likely to want AI chat support — making AI-powered service the clearest predictor of whether a credit union retains or loses younger members.",
+            },
+            {
+                "title": "Credit Unions Need AI Chat to Stay in the Conversation",
+                "source": "PYMNTS",
+                "url": "https://www.pymnts.com/news/artificial-intelligence/2026/credit-unions-need-ai-chat-to-stay-in-the-conversation/",
+                "published_at": "2026-05-07",
+                "snippet": "Only 1 in 3 fintechs offer AI-led chat support. Credit unions that deploy it first can own the conversational banking layer that keeps members from defaulting to big-bank apps.",
+            },
+            {
+                "title": "How a New York Credit Union Makes Itself 'Discoverable' on AI",
+                "source": "American Banker",
+                "url": "https://www.americanbanker.com/payments/news/how-a-new-york-credit-union-makes-itself-discoverable-on-ai",
+                "published_at": "2026-08-11",
+                "snippet": "A New York CU built an AI discoverability strategy so members find its products when asking generative AI tools for financial advice — a new battleground for member acquisition.",
+            },
+            {
+                "title": "Banks and Credit Unions Say They're Growing More Fluent in AI",
+                "source": "American Banker",
+                "url": "https://www.americanbanker.com/news/exclusive-research-ai-literacy-is-on-the-rise-among-banks",
+                "published_at": "2026-07-09",
+                "snippet": "Half of all institutions surveyed are now at least moderately literate in AI — up significantly from 2025 — driven by on-the-job learning and informal knowledge sharing.",
             },
         ],
     },
     {
-        "theme": "Fraud Surge: Real-Time Payments, Real-Time Risk",
+        "theme": "Fraud in the Era of Real-Time, AI-Powered Attacks",
         "icon": "🚨",
         "heat_score": 88,
         "summary": (
-            "APP (authorised push payment) fraud is the defining fraud challenge of the "
-            "real-time payments era. Scam-related fraud jumped 56% in 2024, with losses "
-            "rising 121%. The irrevocable nature of FedNow and RTP transactions means "
-            "prevention must happen in under 200ms. Fraud liability concerns remain the "
-            "top reason credit unions delay FedNow go-live dates."
+            "41% of FIs cite real-time payments fraud as their top 2026 risk. AI is now both "
+            "the weapon (synthetic identities, voice cloning) and the shield (real-time behavioural "
+            "analytics). 82% of CU members say security determines how they pay — fraud management "
+            "is now a direct driver of transaction volume, not just a cost center."
         ),
-        "tags": ["fraud", "app-fraud", "real-time-payments", "risk", "security"],
+        "tags": ["fraud", "ai-fraud", "real-time-payments", "synthetic-identity", "security"],
         "articles": [
             {
-                "title": "Scam-Related Fraud Jumped 56% in 2024, Surpassing Digital Payment Crimes",
+                "title": "Credit Unions Fight Fraud by Connecting Member Data Faster",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/news/security-and-risk/2024/scam-related-fraud-jumped-56percent-surpassing-digital-payment-crimes",
-                "published_at": "2024-12-03",
-                "snippet": "Scam-related fraud now accounts for 23% of all fraudulent transactions, surpassing traditional digital payment crimes for the first time.",
+                "url": "https://www.pymnts.com/credit-unions/2026/credit-unions-fight-fraud-by-connecting-member-data-faster/",
+                "published_at": "2026-06-24",
+                "snippet": "Credit unions fighting AI-powered fraud are winning by unifying real-time data across account opening, authentication, and payment activity — catching attacks that span multiple systems.",
             },
             {
-                "title": "APP Fraud in Focus as Digital Tools Redefine Prevention Tactics",
+                "title": "82% of Credit Union Members Say Security Drives How They Pay",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/news/security-and-risk/2024/app-fraud-in-focus-as-digital-tools-redefine-prevention-tactics/",
-                "published_at": "2024-09-18",
-                "snippet": "Financial institutions are pivoting from reactive fraud response to real-time AI-based prevention as APP fraud losses mount.",
+                "url": "https://www.pymnts.com/credit-unions/2026/82-of-credit-union-members-say-security-drives-how-they-pay/",
+                "published_at": "2026-05-29",
+                "snippet": "PYMNTS survey: 82% of CU members choose payment methods primarily based on perceived security — making fraud prevention the single biggest lever on transaction volume.",
             },
             {
-                "title": "Data Sharing Seen as Key to Stopping Real-Time Payments Fraud",
-                "source": "PYMNTS",
-                "url": "https://www.pymnts.com/news/security-and-risk/2024/data-sharing-seen-as-key-to-stopping-real-time-payments-fraud/",
-                "published_at": "2024-08-27",
-                "snippet": "Consortium fraud intelligence — shared blacklists and behavioral signals across FIs — is emerging as the most effective counter to RTP fraud.",
+                "title": "Fraud Will Remain a Top Problem for Banks in 2026, But AI Could Help",
+                "source": "American Banker",
+                "url": "https://www.americanbanker.com/payments/news/exclusive-research-is-ai-an-effective-tool-to-fight-fraud",
+                "published_at": "2026-04-17",
+                "snippet": "41% of respondents say real-time payments fraud has the biggest negative impact on their organization in 2026 — and AI-driven detection is the primary response strategy.",
             },
             {
-                "title": "State of the Payment Scam: Banks Battling APP Fraud",
+                "title": "Executives See Speed, Trust and Data Reshaping Payments in 2026",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/news/security-and-risk/2024/state-of-the-payment-scam-banks-battling-app-fraud/",
-                "published_at": "2024-07-31",
-                "snippet": "Banks and credit unions are overhauling fraud detection playbooks as APP scam tactics grow more sophisticated alongside faster payment adoption.",
-            },
-            {
-                "title": "Slow Going for Faster Payments as Fraud Concerns Persist",
-                "source": "PYMNTS",
-                "url": "https://www.pymnts.com/real-time-payments/2024/slow-going-for-faster-payments-as-fraud-concerns-persist/",
-                "published_at": "2024-05-14",
-                "snippet": "Despite clear member demand, fraud liability concerns remain the top reason credit unions delay FedNow and RTP go-live dates.",
+                "url": "https://www.pymnts.com/news/payments-innovation/2026/executives-see-speed-trust-and-data-reshaping-payments-in-2026/",
+                "published_at": "2026-03-12",
+                "snippet": "Payment leaders rank fraud management as the top operational challenge of 2026 — ahead of compliance and infrastructure — as AI-generated attacks accelerate across all channels.",
             },
         ],
     },
     {
-        "theme": "Stablecoins Go Mainstream After GENIUS Act",
+        "theme": "Stablecoin Rules Take Shape: GENIUS Act Implementation",
         "icon": "💎",
         "heat_score": 85,
         "summary": (
-            "The GENIUS Act, signed into law in 2025, created the first US federal licensing "
-            "framework for payment stablecoins. Banks are moving fast: Circle, Ripple, and "
-            "Paxos all filed for federal charters. The OCC is finalising implementation rules. "
-            "200+ community bank leaders are pushing back on a loophole that lets stablecoin "
-            "issuers bypass interest-payment prohibitions that apply to banks."
+            "The GENIUS Act became law in July 2025 and regulators are racing to finish "
+            "implementation rules before the January 2027 deadline. The OCC targets November "
+            "for final stablecoin regs. FinCEN and banking agencies proposed the first KYC "
+            "rules for stablecoin issuers in August 2026. Credit unions must decide whether "
+            "to pursue NCUA-supervised issuance or cede the market to bank-chartered issuers."
         ),
-        "tags": ["stablecoins", "genius-act", "digital-assets", "regulation", "occ"],
+        "tags": ["stablecoins", "genius-act", "occ", "fincen", "ncua", "digital-assets"],
         "articles": [
             {
-                "title": "GENIUS Act Pushes Stablecoin Compliance Into Banks' Back Offices",
+                "title": "FinCEN, Banking Agencies Propose First Customer ID Rules for Stablecoin Issuers",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/cryptocurrency/2026/genius-act-pushes-stablecoin-compliance-into-banks-back-offices/",
-                "published_at": "2026-01-14",
-                "snippet": "Banks are redesigning back-office systems to handle stablecoin transactions under the new GENIUS Act compliance requirements.",
+                "url": "https://www.pymnts.com/cryptocurrency/2026/fincen-banking-agencies-propose-first-customer-identification-rules-stablecoin-issuers/",
+                "published_at": "2026-08-14",
+                "snippet": "Treasury and banking regulators jointly proposed the first KYC rules specifically covering stablecoin issuers — a major step in GENIUS Act implementation with a 60-day comment window.",
             },
             {
                 "title": "OCC Races the Clock to Finish GENIUS Act Stablecoin Rules",
                 "source": "PYMNTS",
                 "url": "https://www.pymnts.com/legal/2026/occ-races-the-clock-to-finish-genius-act-stablecoin-rules/",
-                "published_at": "2026-03-08",
-                "snippet": "The OCC is targeting November for final stablecoin rules — and banks are already positioning their charters and compliance frameworks ahead of the deadline.",
+                "published_at": "2026-07-31",
+                "snippet": "The OCC is targeting November for its final stablecoin framework — giving banks and credit unions only weeks to adjust charter strategies before the rules lock in.",
             },
             {
-                "title": "GENIUS Act Turns Stablecoin Domicile Into a High-Stakes Regulatory Bet",
+                "title": "New Stablecoin Rules Push Banks Into the Crypto Front Line",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/cryptocurrency/2026/genius-act-turns-stablecoin-domicile-into-a-high-stakes-regulatory-bet/",
-                "published_at": "2026-02-22",
-                "snippet": "Whether to seek a state or federal charter for stablecoin issuance has become a critical strategic decision with long-term competitive implications.",
+                "url": "https://www.pymnts.com/legal/2026/new-stablecoin-rules-push-banks-into-the-crypto-front-line/",
+                "published_at": "2026-06-19",
+                "snippet": "Under GENIUS Act rules, banks must upgrade wallet-level monitoring and prepare for AI agents that conduct transactions without direct human approval — shifting compliance from periodic to real-time.",
             },
             {
-                "title": "Banks Are Pushing Back Against Stablecoin Legislation",
+                "title": "Bank Regulators Push Stablecoin Rules While Warning on AI Risks",
+                "source": "PYMNTS",
+                "url": "https://www.pymnts.com/cryptocurrency/2026/bank-regulators-push-stablecoin-rules-while-warning-on-ai-risks/",
+                "published_at": "2026-05-06",
+                "snippet": "Regulators are releasing stablecoin guidance and AI risk warnings simultaneously — signalling that the two converging technologies pose the biggest combined compliance challenge since AML.",
+            },
+            {
+                "title": "OCC's GENIUS Implementation Draft Keeps Yield on the Table",
                 "source": "American Banker",
-                "url": "https://www.americanbanker.com/news/the-genius-act-existential-threat-to-banks-or-opportunity",
-                "published_at": "2025-05-19",
-                "snippet": "200+ community bank leaders are urging Congress to close a GENIUS Act loophole that allows stablecoin issuers to pay interest — bypassing rules that apply to banks.",
+                "url": "https://www.americanbanker.com/news/occs-genius-implementation-draft-rule-keeps-yield-on-the-table",
+                "published_at": "2026-08-05",
+                "snippet": "The OCC's draft GENIUS Act rules preserve a path for stablecoin issuers to offer yield — leaving a key competitive loophole open that community banks are lobbying hard to close.",
             },
         ],
     },
     {
-        "theme": "Core Modernization: Replace or Extend?",
+        "theme": "Core Modernization: Cloud, AI, and the FinTech Partnership Surge",
         "icon": "🏗️",
         "heat_score": 78,
         "summary": (
-            "Credit unions are caught between a full core replacement (expensive, 18–36 months) "
-            "and a middleware/API layer strategy that extends legacy platforms. Real-time payment "
-            "adoption is exposing core latency limitations that patches can't fix. Some CUs are "
-            "taking stakes in fintechs to control their own technology roadmap — a sign of how "
-            "deep the frustration with legacy vendors runs."
+            "FinTech partnerships with credit unions grew 19% year-over-year; nearly two-thirds "
+            "of CUs now use fintechs to upgrade core products rather than replacing the core. "
+            "Cloud data strategies are the new battleground — institutions that centralize data "
+            "from cores, processors, and digital channels first will own the AI advantage. "
+            "Legacy cores are no longer just slow; they're actively blocking AI deployments."
         ),
-        "tags": ["core-banking", "modernization", "fintech", "payments", "digital-strategy"],
+        "tags": ["core-banking", "cloud", "fintech", "modernization", "data-strategy"],
         "articles": [
             {
-                "title": "AI Forces Credit Unions to Rethink, Not Replace, Old Tech",
+                "title": "Nearly Two-Thirds of Credit Unions Turn to FinTechs to Upgrade Core Products",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/credit-unions/2026/ai-forces-credit-unions-to-rethink-not-replace-old-tech/",
-                "published_at": "2026-02-11",
-                "snippet": "Rather than ripping out legacy cores, a growing cohort of credit unions is using AI-powered middleware to extract modern capabilities from existing infrastructure.",
+                "url": "https://www.pymnts.com/credit-unions/2026/nearly-two-thirds-of-credit-unions-turn-to-fintechs-to-upgrade-core-products",
+                "published_at": "2026-07-14",
+                "snippet": "63% of credit unions are now sourcing core product upgrades from fintech partners rather than their core vendor — a structural shift from loyalty to pragmatism in vendor relationships.",
             },
             {
-                "title": "Credit Unions Take Stakes in FinTechs to Control the Roadmap",
+                "title": "Credit Unions Build Cloud Data Strategy to Stay Competitive",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/credit-unions/2026/credit-unions-take-stakes-in-fintechs-to-control-the-roadmap/",
-                "published_at": "2026-03-19",
-                "snippet": "Frustrated with slow vendor timelines, a new wave of credit unions is making equity investments in fintechs to shape product development directly.",
+                "url": "https://www.pymnts.com/credit-unions/2026/credit-unions-build-cloud-data-strategy-to-stay-competitive/",
+                "published_at": "2026-06-30",
+                "snippet": "Credit unions are racing to consolidate data from cores, processors, and digital channels into cloud-native architectures — the prerequisite for any serious AI deployment.",
             },
             {
-                "title": "Credit Union Innovation Hinges on Payment Speed and Security",
+                "title": "How Credit Unions Became FinTechs' Best Bet for Scale",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/credit-unions/2024/credit-union-innovation-hinges-on-payment-speed-and-security/",
-                "published_at": "2024-05-22",
-                "snippet": "Real-time payment capability has become the defining differentiator for credit union competitiveness — and legacy cores are the biggest obstacle.",
+                "url": "https://www.pymnts.com/credit-unions/2026/how-credit-unions-became-fintechs-best-bet-for-scale/",
+                "published_at": "2026-05-21",
+                "snippet": "Fintech partnerships with credit unions grew nearly 19% year over year, with almost half of all fintechs now working with at least one CU — reversing years of fintech-CU friction.",
             },
             {
-                "title": "From Rivals to Partners: The Rise of Credit Union–FinTech Collaboration",
-                "source": "PYMNTS",
-                "url": "https://www.pymnts.com/tracker_posts/from-rivals-to-partners-the-rise-of-credit-union-fintech-collaboration/",
-                "published_at": "2024-09-10",
-                "snippet": "The share of fintechs reporting no barriers to credit union partnerships rose from 6% in 2023 to 29% in 2024 — a structural shift in the ecosystem.",
+                "title": "The Real Work of Modernizing Banks' Systems Is Only Just Beginning",
+                "source": "American Banker",
+                "url": "https://www.americanbanker.com/opinion/the-real-work-of-modernizing-banks-systems-is-only-just-beginning",
+                "published_at": "2026-08-19",
+                "snippet": "Legacy core systems now directly constrain banks' ability to deploy AI and respond to regulators — and the chisel-versus-sledgehammer modernization debate is reaching a tipping point.",
             },
         ],
     },
     {
-        "theme": "BNPL & Digital Members: CU Lending Under Pressure",
+        "theme": "BNPL at 22% Growth: Credit Unions' Loyalty Opportunity",
         "icon": "📲",
         "heat_score": 72,
         "summary": (
-            "Buy-now-pay-later is eating into credit union personal loan portfolios as Gen Z "
-            "members choose fintech-native checkout financing over applying for a CU loan. "
-            "CUs with real-time loan decisioning retain 31% more Gen Z members than peers "
-            "using 24–48 hour approval processes. Member retention is now a technology problem "
-            "as much as a relationship problem."
+            "BNPL transaction value grew 22% in 2025. 38% of CU members want BNPL from their "
+            "own institution — but only 11% of credit unions currently offer it. BNPL is moving "
+            "beyond retail checkout into utilities, medical bills, and travel. CUs that bring "
+            "BNPL in-house stop losing the relationship to fintechs at the most active spending moments."
         ),
-        "tags": ["bnpl", "member-retention", "lending", "gen-z", "digital-banking"],
+        "tags": ["bnpl", "embedded-finance", "member-retention", "lending", "gen-z"],
         "articles": [
             {
-                "title": "How Credit Unions Are Staying Relevant in the Buy Now, Pay Later Space",
-                "source": "American Banker",
-                "url": "https://www.americanbanker.com/payments/news/how-credit-unions-are-staying-relevant-in-the-buy-now-pay-later-space",
-                "published_at": "2024-06-03",
-                "snippet": "Credit unions are fighting back against BNPL fintechs by offering their own post-purchase installment options — often at lower rates with better member protections.",
+                "title": "BNPL Moves From Checkout Perk to Credit Union Retention Tool",
+                "source": "PYMNTS",
+                "url": "https://www.pymnts.com/credit-unions/2026/buy-now-pay-later-moves-from-checkout-perk-to-credit-union-retention-tool/",
+                "published_at": "2026-07-28",
+                "snippet": "38% of CU members want BNPL from their own institution. CUs that deploy it in-house keep members engaged at checkout — and gather spending intelligence that fintech BNPL providers keep for themselves.",
             },
             {
-                "title": "Credit Unions Cure Churn With Enterprise Focus on Innovation",
+                "title": "22% BNPL Growth Gives Credit Unions a Member Loyalty Opening",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/credit-unions/2024/credit-unions-cure-churn-with-enterprise-focus-on-innovation/",
-                "published_at": "2024-07-18",
-                "snippet": "Credit unions that treat digital transformation as an enterprise-wide initiative — not an IT project — are seeing measurably better member retention outcomes.",
+                "url": "https://www.pymnts.com/credit-unions/2026/22percent-bnpl-growth-gives-credit-unions-a-member-loyalty-opening/",
+                "published_at": "2026-06-10",
+                "snippet": "BNPL value grew 22% in 2025. Credit unions willing to offer it can capture that volume in-house rather than watching members use Klarna or Affirm — and hand over transaction data — at checkout.",
             },
             {
-                "title": "Credit Unions Face a Critical Moment as AI Moves Mainstream",
+                "title": "38% of Credit Union Members Want BNPL From Their FI",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/tracker_posts/critical-moment-the-ai-imperative-for-credit-unions",
-                "published_at": "2024-11-12",
-                "snippet": "PYMNTS' tracker examines how credit unions must adapt lending, servicing, and member engagement strategies as AI-native fintechs intensify competition.",
+                "url": "https://www.pymnts.com/credit-unions/2026/38-of-credit-union-members-want-bnpl-from-their-fi/",
+                "published_at": "2026-05-13",
+                "snippet": "PYMNTS data: 70% of Gen Z CU members would use BNPL from their primary FI — yet only 11% of credit unions offer it. The gap is a member attrition risk growing every quarter.",
             },
             {
-                "title": "FinTechs Lag Credit Unions on the Next AI Banking Test",
+                "title": "The BNPL Revolution Moves Into the Card Stack",
                 "source": "PYMNTS",
-                "url": "https://www.pymnts.com/news/artificial-intelligence/2026/fintechs-lag-credit-unions-on-the-next-ai-banking-test/",
-                "published_at": "2026-04-07",
-                "snippet": "A surprising new PYMNTS study finds credit unions outpacing fintechs on member trust metrics for AI-assisted financial products.",
+                "url": "https://www.pymnts.com/bnpl/2026/the-bnpl-revolution-moves-into-the-card-stack/",
+                "published_at": "2026-08-04",
+                "snippet": "Installment payments are being embedded directly into debit and credit card products — raising the stakes for credit unions whose card programs don't yet support in-line installment options.",
             },
         ],
     },
@@ -313,14 +306,14 @@ def run():
             id=str(uuid.uuid4()),
             article_count=len(articles),
             articles=articles,
-            refreshed_at=now - timedelta(hours=i * 2),
+            refreshed_at=now - timedelta(hours=i * 3),
             created_at=now - timedelta(days=1),
             **data,
         )
         db.add(topic)
 
     db.commit()
-    print(f"✅ Seeded {len(TOPICS)} trending topics (all URLs verified 200)")
+    print(f"✅ Seeded {len(TOPICS)} trending topics (2026 articles only, all URLs verified 200)")
     for t in db.query(TrendingTopic).order_by(TrendingTopic.heat_score.desc()).all():
         print(f"  [{t.heat_score:3}] {t.icon} {t.theme} — {t.article_count} articles")
     db.close()
