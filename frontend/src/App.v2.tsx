@@ -173,6 +173,7 @@ const NAV = [
   { to: '/my-lists',  icon: '☰', label: 'My Lists' },
   { to: '/ai-engine', icon: '✦', label: 'AI Engine' },
   { to: '/campaigns', icon: '✉', label: 'Campaigns' },
+  { to: '/trending',  icon: '🔥', label: 'Trending'  },
   { to: '/pipeline',  icon: '⊞', label: 'Pipeline' },
   { to: '/settings',  icon: '⚙', label: 'Settings' },
 ]
@@ -1811,22 +1812,79 @@ function Pipeline() {
   )
 }
 
+const CAMPAIGN_STATUS: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  active:    { label: 'Active',    color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' },
+  paused:    { label: 'Paused',    color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
+  draft:     { label: 'Draft',     color: '#64748B', bg: '#F1F5F9', border: '#CBD5E1' },
+  completed: { label: 'Completed', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
+}
+
+function CampaignStatusPill({ status }: { status: string }) {
+  const cfg = CAMPAIGN_STATUS[status] || CAMPAIGN_STATUS['draft']
+  return (
+    <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+      style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.border }}>
+      {cfg.label}
+    </span>
+  )
+}
+
 // ─── Campaigns ──────────────────────────────────────────────────
 function Campaigns() {
-  const { data: campaigns } = useQuery({
+  const { data: campaigns, isLoading, refetch } = useQuery({
     queryKey: ['campaigns'],
     queryFn: () => api.get('/api/campaigns/').then(r => r.data),
+    refetchOnMount: true,
+    staleTime: 0,
   })
+
+  const totalSent    = (campaigns || []).reduce((s: number, c: any) => s + (c.total_sent || 0), 0)
+  const totalOpens   = (campaigns || []).reduce((s: number, c: any) => s + (c.total_opens || 0), 0)
+  const totalReplies = (campaigns || []).reduce((s: number, c: any) => s + (c.total_replies || 0), 0)
+  const avgOpen  = totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : '—'
+  const avgReply = totalSent > 0 ? ((totalReplies / totalSent) * 100).toFixed(1) : '—'
+
   return (
     <div>
-      <PageHeader title="Campaigns" sub="Multi-channel outreach management" />
-      <div className="p-8">
-        {campaigns?.length > 0 ? (
+      <PageHeader
+        title="Campaigns"
+        sub="Multi-channel outreach management"
+        action={
+          <button onClick={() => refetch()} className="text-xs bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-3 py-2 rounded-lg transition-colors">
+            ↻ Refresh
+          </button>
+        }
+      />
+      <div className="p-8 space-y-5">
+
+        {/* Summary stats */}
+        {(campaigns?.length ?? 0) > 0 && (
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { label: 'Total Campaigns', value: campaigns.length, color: 'text-slate-700' },
+              { label: 'Emails Sent',     value: totalSent,        color: 'text-slate-700' },
+              { label: 'Avg Open Rate',   value: `${avgOpen}%`,    color: 'text-green-600' },
+              { label: 'Avg Reply Rate',  value: `${avgReply}%`,   color: 'text-blue-600'  },
+            ].map(s => (
+              <div key={s.label} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
+                <div className="text-xs text-slate-400 mt-0.5">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="text-center py-20 text-slate-300">
+            <div className="w-6 h-6 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-3" />
+            <div className="text-sm text-slate-400">Loading campaigns...</div>
+          </div>
+        ) : (campaigns?.length ?? 0) > 0 ? (
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  {['Name', 'Sent', 'Opens', 'Replies', 'Status'].map(h => (
+                  {['Campaign', 'Channel', 'Sent', 'Open Rate', 'Reply Rate', 'Status'].map(h => (
                     <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -1834,11 +1892,25 @@ function Campaigns() {
               <tbody>
                 {campaigns.map((c: any) => (
                   <tr key={c.id} className="border-b border-slate-50 hover:bg-blue-50/20 transition-colors">
-                    <td className="px-6 py-3.5 font-semibold text-slate-800">{c.name}</td>
-                    <td className="px-6 py-3.5">{c.total_sent}</td>
-                    <td className="px-6 py-3.5 text-green-600">{c.total_opens}</td>
-                    <td className="px-6 py-3.5 text-blue-600">{c.total_replies}</td>
-                    <td className="px-6 py-3.5"><StatusPill status={c.status} /></td>
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-slate-800">{c.name}</div>
+                      <div className="text-xs text-slate-400 mt-0.5 capitalize">{(c.industry || '').replace('_', ' ')}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full capitalize">
+                        {c.channel === 'email' ? '✉' : '🔗'} {c.channel}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-700">{c.total_sent}</td>
+                    <td className="px-6 py-4 font-semibold text-green-600">
+                      {c.total_sent > 0 ? `${c.open_rate}%` : '—'}
+                      {c.total_sent > 0 && <span className="text-xs font-normal text-slate-400 ml-1">({c.total_opens})</span>}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-blue-600">
+                      {c.total_sent > 0 ? `${c.reply_rate}%` : '—'}
+                      {c.total_sent > 0 && <span className="text-xs font-normal text-slate-400 ml-1">({c.total_replies})</span>}
+                    </td>
+                    <td className="px-6 py-4"><CampaignStatusPill status={c.status} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -1848,12 +1920,157 @@ function Campaigns() {
           <div className="text-center py-20 text-slate-300">
             <div className="text-4xl mb-3">✉</div>
             <div className="text-sm font-semibold text-slate-400">No campaigns yet</div>
+            <div className="text-xs text-slate-300 mt-1">Campaigns will appear here once created</div>
           </div>
         )}
       </div>
     </div>
   )
 }
+
+// ─── Trending ────────────────────────────────────────────────────
+function Trending() {
+  const { data: topics, isLoading } = useQuery({
+    queryKey: ['trending'],
+    queryFn: () => api.get('/api/trending/').then(r => r.data),
+    staleTime: 0,
+    refetchOnMount: true,
+  })
+
+  const heatLabel = (score: number) =>
+    score >= 90 ? { text: 'Very Hot', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' }
+    : score >= 75 ? { text: 'Hot', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200' }
+    : { text: 'Rising', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' }
+
+  const heatBar = (score: number) => {
+    const pct = `${score}%`
+    const col = score >= 90 ? '#DC2626' : score >= 75 ? '#EA580C' : '#D97706'
+    return (
+      <div className="flex items-center gap-2 mt-1">
+        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-full rounded-full transition-all" style={{ width: pct, background: col }} />
+        </div>
+        <span className="text-xs font-bold tabular-nums" style={{ color: col }}>{score}</span>
+      </div>
+    )
+  }
+
+  const sourceColors: Record<string, string> = {
+    'PYMNTS':           'bg-blue-50 text-blue-700 border-blue-200',
+    'The Financial Brand': 'bg-purple-50 text-purple-700 border-purple-200',
+    'Finextra':         'bg-teal-50 text-teal-700 border-teal-200',
+    'Payments Journal': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    'American Banker':  'bg-slate-100 text-slate-700 border-slate-300',
+    'CUNA News':        'bg-green-50 text-green-700 border-green-200',
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="Trending in Fintech"
+        sub="AI-grouped themes from PYMNTS · Finextra · The Financial Brand · Payments Journal · Refreshed daily"
+        action={
+          <span className="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-full font-semibold">
+            🔥 Live Feed
+          </span>
+        }
+      />
+
+      <div className="p-8">
+        {isLoading ? (
+          <div className="text-center py-20">
+            <div className="w-6 h-6 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-3" />
+            <div className="text-sm text-slate-400">Loading trending topics...</div>
+          </div>
+        ) : !topics?.length ? (
+          <div className="text-center py-20 text-slate-300">
+            <div className="text-4xl mb-3">🔥</div>
+            <div className="text-sm font-semibold text-slate-400">No trending topics yet</div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-5">
+            {topics.map((topic: any) => {
+              const heat = heatLabel(topic.heat_score)
+              return (
+                <div key={topic.id} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+
+                  {/* Header */}
+                  <div className="px-5 pt-5 pb-4 border-b border-slate-100">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-2xl flex-shrink-0">{topic.icon}</span>
+                        <h3 className="font-bold text-slate-800 text-sm leading-snug">{topic.theme}</h3>
+                      </div>
+                      <span className={`flex-shrink-0 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${heat.bg} ${heat.color} ${heat.border}`}>
+                        {heat.text}
+                      </span>
+                    </div>
+
+                    {/* Heat bar */}
+                    <div className="mt-2.5">
+                      {heatBar(topic.heat_score)}
+                    </div>
+
+                    {/* Summary */}
+                    <p className="text-xs text-slate-500 mt-3 leading-relaxed line-clamp-3">
+                      {topic.summary}
+                    </p>
+
+                    {/* Tags */}
+                    {topic.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {topic.tags.slice(0, 4).map((tag: string) => (
+                          <span key={tag} className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Articles */}
+                  <div className="flex-1 divide-y divide-slate-50">
+                    {(topic.articles || []).map((article: any, i: number) => {
+                      const srcCls = sourceColors[article.source] || 'bg-slate-100 text-slate-600 border-slate-200'
+                      return (
+                        <a
+                          key={i}
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-start gap-3 px-5 py-3.5 hover:bg-slate-50 transition-colors group"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold text-slate-700 group-hover:text-blue-700 transition-colors leading-snug line-clamp-2">
+                              {article.title}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className={`text-xs font-medium px-1.5 py-0.5 rounded border ${srcCls}`}>
+                                {article.source}
+                              </span>
+                              <span className="text-xs text-slate-300">{article.published_at}</span>
+                            </div>
+                          </div>
+                          <span className="text-slate-300 group-hover:text-blue-400 transition-colors flex-shrink-0 mt-0.5 text-sm">↗</span>
+                        </a>
+                      )
+                    })}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-5 py-2.5 bg-slate-50 border-t border-slate-100 text-xs text-slate-400">
+                    {topic.article_count} articles · Updated {new Date(topic.refreshed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 
 // ─── Settings ───────────────────────────────────────────────────
 function Settings() {
@@ -1874,7 +2091,10 @@ function Settings() {
   })
   const [saved, setSaved] = useState(false)
 
-  // Re-sync form when user profile loads from /api/auth/me (async after mount)
+  // Always fetch fresh profile on Settings mount (App-level loadUser runs before token exists on fresh login)
+  useEffect(() => { loadUser() }, [])
+
+  // Re-sync form once user profile arrives from /api/auth/me
   useEffect(() => {
     if (!user) return
     setForm({
@@ -2084,6 +2304,7 @@ export default function App() {
         <Route path="/my-lists"  element={<RequireAuth><Layout><MyLists /></Layout></RequireAuth>} />
         <Route path="/ai-engine" element={<RequireAuth><Layout><AIEngine /></Layout></RequireAuth>} />
         <Route path="/campaigns" element={<RequireAuth><Layout><Campaigns /></Layout></RequireAuth>} />
+        <Route path="/trending"  element={<RequireAuth><Layout><Trending  /></Layout></RequireAuth>} />
         <Route path="/pipeline"  element={<RequireAuth><Layout><Pipeline /></Layout></RequireAuth>} />
         <Route path="/settings"  element={<RequireAuth><Layout><Settings /></Layout></RequireAuth>} />
         <Route path="/auth/callback" element={<GoogleAuthCallback />} />
